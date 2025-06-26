@@ -59,3 +59,33 @@ def create_start_payment_keyboard(deal_id: str) -> InlineKeyboardMarkup:
             )]
         ]
     )
+
+
+def create_wallets_keyboard(wallets: list, active_wallet: str) -> InlineKeyboardMarkup:
+    buttons = []
+    for idx, wallet in enumerate(wallets, 1):
+        label = f"{idx}✅" if wallet == active_wallet else f"{idx}"
+        buttons.append(
+            InlineKeyboardButton(text=label, callback_data=f"select_wallet_{idx}")
+        )
+
+    keyboard = []
+    # Формируем строки по 2 кнопки
+    for i in range(0, len(buttons), 2):
+        row = buttons[i:i + 2]
+        keyboard.append(row)
+
+    # Добавляем кнопки управления
+    if wallets:
+        keyboard.append([InlineKeyboardButton(text="❌ Удалить кошелек", callback_data="delete_wallet")])
+    keyboard.append([InlineKeyboardButton(text="➕ Добавить кошелек", callback_data="add_wallet")])
+
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+def create_back_to_menu_keyboard() -> InlineKeyboardMarkup:
+    """Кнопка 'В меню'"""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔙 В меню", callback_data="back_to_menu")]
+        ]
+    )

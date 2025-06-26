@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Float, Integer, ForeignKey
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -20,5 +20,5 @@ class User(Base):
     __tablename__ = "users"
     telegram_id = Column(Integer, primary_key=True)
     username = Column(String(50))
-    wallet_address = Column(String(48))
-    # Дополнительные поля (например, рейтинг)
+    wallets = Column(JSON, default=lambda: [])  # Используйте lambda для корректной сериализации
+    active_wallet = Column(String(48))

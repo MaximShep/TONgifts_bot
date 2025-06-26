@@ -4,15 +4,17 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard
+from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard, create_wallets_keyboard, create_back_to_menu_keyboard
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
-from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, update_ton_address
+from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, update_ton_address, get_user_wallets, add_user_wallet, set_active_wallet
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
 import os
 from aiogram.enums import ParseMode
+from database.models import User  # Для работы с моделью User
+from database.repository import session  # Для доступа к сессии
 
 router = Router()
 
@@ -21,6 +23,7 @@ class SellerStates(StatesGroup):
     wait_ton_address = State()
     wait_gift_name = State()
     wait_price = State()
+    wait_ton_address_in_wallet = State()
 
 
 class BuyerStates(StatesGroup):
@@ -131,17 +134,63 @@ async def go_menu(message: Message, state: FSMContext):
         reply_markup=create_welcome_keyboard()
     )
 
+
 @router.callback_query(F.data == "wallet")
-async def process_wallet(callback: CallbackQuery):
-    """Обработка кнопки 'Кошелек'"""
-    await callback.message.delete()  # Удаляем меню
+async def show_wallets(callback: CallbackQuery):
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    if not user:
+        user = User(telegram_id=callback.from_user.id, username=callback.from_user.username, wallets=[])
+        session.add(user)
+        session.commit()
+
+    wallets = user.wallets
+    active_wallet = user.active_wallet
+
+    await callback.message.delete()
+    await callback.message.answer_photo(
+        photo=FSInputFile("assets/howMuch.png"),
+        caption="💼 Ваши кошельки:\n" +
+                ("\n".join([f"{i + 1}. {w} {'✅' if w == active_wallet else ''}" for i, w in enumerate(wallets)])
+                 if wallets else "Нет сохраненных кошельков"),
+        reply_markup=create_wallets_keyboard(wallets, active_wallet)
+    )
+
+@router.callback_query(F.data.startswith("select_wallet_"))
+async def select_wallet(callback: CallbackQuery):
+    """Обработка выбора кошелька"""
+    wallet_idx = int(callback.data.split("_")[-1]) - 1
+    wallets = get_user_wallets(callback.from_user.id)
+    if 0 <= wallet_idx < len(wallets):
+        set_active_wallet(callback.from_user.id, wallets[wallet_idx])
+        await callback.answer(f"Активный кошелек: {wallets[wallet_idx]}")
+
+@router.callback_query(F.data == "add_wallet")
+async def add_wallet(callback: CallbackQuery, state: FSMContext):
+    """Начало добавления нового кошелька"""
+    await callback.message.delete()
     await callback.message.answer(
-        "Введите кошелек:",
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text="В меню", callback_data="back_to_menu")]
-            ]
-        )
+        "📥 Введите адрес нового кошелька:",
+        reply_markup=create_back_to_menu_keyboard()
+    )
+    await state.set_state(SellerStates.wait_ton_address_in_wallet)  # Используем существующее состояние
+
+@router.message(SellerStates.wait_ton_address_in_wallet)
+async def process_add_wallet(message: Message, state: FSMContext):
+    if validate_ton_address(message.text):
+        add_user_wallet(message.from_user.id, message.text)
+        user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
+        print(f"User wallets after add: {user.wallets}")  # Отладочный вывод
+        await message.answer("✅ Кошелек добавлен!", reply_markup=create_back_to_menu_keyboard())
+    else:
+        await message.answer("⚠️ Неверный формат адреса")
+    await state.clear()
+
+@router.callback_query(F.data == "delete_wallet")
+async def delete_wallet(callback: CallbackQuery):
+    """Обработка попытки удаления кошелька"""
+    await callback.answer(
+        "🚧 Эта функция временно недоступна",
+        show_alert=True
     )
 
 @router.callback_query(F.data == "back_to_menu")
@@ -195,18 +244,20 @@ async def process_seller_role(callback: CallbackQuery, state: FSMContext):
         caption="🔗 Отправьте ссылку на подарок:")
     await state.set_state(SellerStates.wait_gift_name)
 
+
 @router.message(SellerStates.wait_ton_address)
 async def process_ton_address(message: Message, state: FSMContext):
     if not validate_ton_address(message.text):
         await message.answer("Неверный формат TON-адреса. Попробуйте снова:")
         return
-    save_or_update_user(
-        telegram_id=message.from_user.id,
-        username=message.from_user.username,
-        wallet_address=message.text  # Сохраняем TON-адрес как wallet_address 
-    )
+
+    # Добавляем кошелек и устанавливаем активным
+    add_user_wallet(message.from_user.id, message.text)
+    set_active_wallet(message.from_user.id, message.text)  # Новая строка
+
     await state.update_data(ton_address=message.text)
     data = await state.get_data()
+
     if data["id"] != "":
         update_ton_address(data["id"], data["ton_address"])
         await message.bot.send_message(
@@ -215,21 +266,20 @@ async def process_ton_address(message: Message, state: FSMContext):
         )
         await message.bot.send_message(
             chat_id=data["buyer_id"],
-            text=
-            f"<b>🔗 Оплата по сделке #{data["id"]}</b>\n\n"
-            f"🛍️ Вы покупаете: {data["gift_name"]}\n"
-            f"💰 Сумма к оплате: <b>{data["comission_price"]} TON</b>\n\n"
-            f"<i>Комиссия сервисса составляет 5% от стоимости сделки (при сумме сделки менее 0.01 TON, комиссия составляет 0.01 TON)</i>",
+            text=f"<b>🔗 Оплата по сделке #{data['id']}</b>\n"
+                 f"🛍️ Вы покупаете: {data['gift_name']}\n"
+                 f"💰 Сумма к оплате: <b>{data['comission_price']} TON</b>\n"
+                 f"<i>Комиссия сервиса составляет 5% от стоимости сделки</i>",
             parse_mode=ParseMode.HTML,
             reply_markup=create_start_payment_keyboard(data["id"])
         )
         await state.clear()
     else:
         await message.answer_photo(
-        photo=FSInputFile("assets/link.png"),
-        caption="🔗 Отправьте ссылку на подарок:")
+            photo=FSInputFile("assets/link.png"),
+            caption="🔗 Отправьте ссылку на подарок:"
+        )
         await state.set_state(SellerStates.wait_gift_name)
-
 
 @router.message(SellerStates.wait_gift_name)
 async def process_gift_name(message: Message, state: FSMContext):

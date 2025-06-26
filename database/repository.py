@@ -68,17 +68,46 @@ def get_deal_by_id(new_id: str) -> Type[Deal] | None:
     return session.query(Deal).filter_by(id=new_id).first()  # Теперь возвращает объект Deal
 
 def save_or_update_user(telegram_id: int, username: str, wallet_address: str = None):
-    """
-    Сохраняет или обновляет пользователя в таблице users.
-    Если пользователь уже существует, обновляет только wallet_address (если передан).
-    """
+    with Session() as session:
+        user = session.query(User).filter_by(telegram_id=telegram_id).first()
+        if not user:
+            user = User(
+                telegram_id=telegram_id,
+                username=username,
+                wallets=[wallet_address] if wallet_address else [],
+                active_wallet=wallet_address
+            )
+            session.add(user)
+        else:
+            if wallet_address and wallet_address not in user.wallets:
+                user.wallets.append(wallet_address)
+        session.commit()
+def get_user_wallets(telegram_id: int) -> list:
+    """Получает все кошельки пользователя"""
     user = session.query(User).filter_by(telegram_id=telegram_id).first()
-    if not user:
-        # Создаем нового пользователя
-        user = User(telegram_id=telegram_id, username=username, wallet_address=wallet_address)
-        session.add(user)
-    else:
-        # Обновляем существующего пользователя
-        if wallet_address and user.wallet_address != wallet_address:
-            user.wallet_address = wallet_address
-    session.commit()
+    return user.wallets if user else []
+
+def add_user_wallet(telegram_id: int, wallet_address: str):
+    print(f" кошелек {wallet_address} сохранен для {telegram_id}")
+    with Session() as session:  # Создаем новую сессию
+        user = session.query(User).filter_by(telegram_id=telegram_id).first()
+        if not user:
+            user = User(
+                telegram_id=telegram_id,
+                username=None,
+                wallets=[wallet_address],
+                active_wallet=wallet_address
+            )
+            session.add(user)
+        else:
+            if wallet_address not in user.wallets:
+                user.wallets = [*user.wallets, wallet_address]
+                user.active_wallet = wallet_address  # Автоматически делаем новый кошелек активным
+        session.commit()
+
+def set_active_wallet(telegram_id: int, wallet_address: str):
+    print(f"Активный кошелек {wallet_address} установлен для {telegram_id}")
+    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+    if user and wallet_address in user.wallets:
+        user.active_wallet = wallet_address
+        session.commit()
