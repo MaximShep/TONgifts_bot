@@ -9,10 +9,20 @@ def create_role_keyboard() -> InlineKeyboardMarkup:
         ]
     )
 def create_welcome_keyboard() -> InlineKeyboardMarkup:
-    """Приветственная кнопка [[8]]"""
+    """Новая клавиатура меню"""
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Создать сделку", callback_data="create_deal")]
+            [
+                InlineKeyboardButton(text="💸Кошелек", callback_data="wallet"),
+                InlineKeyboardButton(text="🫂Рефералка", callback_data="referral")
+            ],
+            [
+                InlineKeyboardButton(text="🚀Создать сделку", callback_data="create_deal")
+            ],
+            [
+                InlineKeyboardButton(text="🌍Language", callback_data="language"),
+                InlineKeyboardButton(text="🤝Поддержка", url="https://t.me/MivelonGuarantor_SupportBot "),
+            ]
         ]
     )
 def create_confirmation_keyboard() -> InlineKeyboardMarkup:

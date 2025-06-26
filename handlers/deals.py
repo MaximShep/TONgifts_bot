@@ -1,8 +1,9 @@
 from aiogram import Router, F
 from aiogram.filters import Command, CommandStart
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+
 from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
@@ -129,6 +130,33 @@ async def go_menu(message: Message, state: FSMContext):
                 "Нажмите кнопку ниже, чтобы создать сделку:",
         reply_markup=create_welcome_keyboard()
     )
+
+@router.callback_query(F.data == "wallet")
+async def process_wallet(callback: CallbackQuery):
+    """Обработка кнопки 'Кошелек'"""
+    await callback.message.delete()  # Удаляем меню
+    await callback.message.answer(
+        "Введите кошелек:",
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="В меню", callback_data="back_to_menu")]
+            ]
+        )
+    )
+
+@router.callback_query(F.data == "back_to_menu")
+async def back_to_menu(callback: CallbackQuery, state: FSMContext):
+    """Возврат в главное меню"""
+    await callback.message.delete()  # Удаляем текущее сообщение
+    await go_menu(callback.message, state)
+
+@router.callback_query(F.data == "referral")
+async def process_referral(callback: CallbackQuery):
+    await callback.answer("Реферальная программа в разработке", show_alert=True)
+
+@router.callback_query(F.data == "language")
+async def process_language(callback: CallbackQuery):
+    await callback.answer("Выбор языка в разработке", show_alert=True)
 
 # --- Остальная логика создания сделки (продавец) ---
 
