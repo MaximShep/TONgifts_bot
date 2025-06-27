@@ -2,10 +2,11 @@ import logging
 import asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
-from handlers import deals, payments
+from handlers import deals, payments, wallets
 from state_middleware import StateMiddleware
 from config import Config  # Импорт класса Config из config.py [[10]]
 from ton_service import TonService
+
 
 
 
@@ -23,6 +24,7 @@ dp = Dispatcher()
 dp.update.middleware(StateMiddleware())
 
 # Регистрация обработчиков
+dp.include_router(wallets.router)
 dp.include_router(deals.router)
 dp.include_router(payments.router)
 async def main():
