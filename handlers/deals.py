@@ -4,7 +4,7 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard, create_wallets_keyboard, create_back_to_menu_keyboard, create_delete_wallet_keyboard, create_delete_confirmation_keyboard, create_back_to_wallets_keyboard
+from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard, create_wallets_keyboard, create_back_to_menu_keyboard, create_delete_wallet_keyboard, create_delete_confirmation_keyboard, create_back_to_wallets_keyboard, create_deal_wallet_selection
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, update_ton_address, get_user_wallets, add_user_wallet, set_active_wallet, delete_user_wallet
@@ -24,6 +24,7 @@ class SellerStates(StatesGroup):
     wait_gift_name = State()
     wait_price = State()
     wait_ton_address_in_wallet = State()
+    select_wallet = State()
 
 class DeleteWalletStates(StatesGroup):
     select_wallet = State()  # Выбор кошелька для удаления
@@ -306,9 +307,77 @@ async def process_create_deal_callback(callback: CallbackQuery, state: FSMContex
 
 @router.callback_query(F.data == "role_seller")
 async def process_seller_role(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(id="")
-    await callback.message.answer("💳 Введите ваш TON-адрес:")
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    wallets = user.wallets if user else []
+    active_wallet = user.active_wallet if user else None
+
+    text = (
+            "💼 <b>Выберите кошелек для сделки:</b>\n\n" +
+            ("\n".join([
+                f"{i + 1}. <code>{w}</code> {'✅' if w == active_wallet else ''}"
+                for i, w in enumerate(wallets)
+            ]) if wallets else "Нет сохраненных кошельков\n\n") +
+            "Можно ввести новый адрес или выбрать существующий"
+    )
+
+    await callback.message.answer(
+        text=text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=create_deal_wallet_selection(wallets, active_wallet)
+    )
     await state.set_state(SellerStates.wait_ton_address)
+
+
+# Выбор существующего кошелька
+@router.callback_query(SellerStates.wait_ton_address, F.data.startswith("deal_wallet_"))
+async def select_deal_wallet(callback: CallbackQuery, state: FSMContext):
+    wallet_idx = int(callback.data.split("_")[-1])
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+
+    if wallet_idx < len(user.wallets):
+        selected_wallet = user.wallets[wallet_idx]
+        set_active_wallet(callback.from_user.id, selected_wallet)
+        await callback.answer(f"Выбран кошелек: {selected_wallet}")
+        await process_seller_role(callback, state)  # Обновляем интерфейс
+
+
+# Кнопка "Далее"
+@router.callback_query(SellerStates.wait_ton_address, F.data == "deal_wallet_next")
+async def proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+
+    if not user or not user.active_wallet:
+        await callback.answer("Сначала выберите кошелек", show_alert=True)
+        return
+
+    await state.update_data(ton_address=user.active_wallet)
+    await callback.message.answer_photo(
+        photo=FSInputFile("assets/link.png"),
+        caption="🔗 Отправьте ссылку на подарок:"
+    )
+    await state.set_state(SellerStates.wait_gift_name)
+
+
+# Обработка ввода нового адреса
+@router.message(SellerStates.wait_ton_address)
+async def process_new_deal_wallet(message: Message, state: FSMContext):
+    if not validate_ton_address(message.text):
+        await message.answer("⚠️ Неверный формат адреса. Попробуйте снова:")
+        return
+
+    add_user_wallet(message.from_user.id, message.text)
+    set_active_wallet(message.from_user.id, message.text)
+    await state.update_data(ton_address=message.text)
+    await message.answer_photo(
+        photo=FSInputFile("assets/link.png"),
+        caption="🔗 Отправьте ссылку на подарок:"
+    )
+    await state.set_state(SellerStates.wait_gift_name)
+
+@router.callback_query(F.data == "cancel_deal")
+async def cancel_deal(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.answer("Сделка отменена", reply_markup=create_welcome_keyboard())
 
 @router.callback_query(F.data == "role_buyer")
 async def process_seller_role(callback: CallbackQuery, state: FSMContext):
