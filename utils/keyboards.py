@@ -1,11 +1,13 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 def create_role_keyboard() -> InlineKeyboardMarkup:
-    """Кнопки выбора роли (продавец/покупатель) [[9]]"""
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="Продавец", callback_data="role_seller")],
-            [InlineKeyboardButton(text="Покупатель", callback_data="role_buyer")]
+            [
+                InlineKeyboardButton(text="🎁 Продавец", callback_data="role_seller"),
+                InlineKeyboardButton(text="💸 Покупатель", callback_data="role_buyer")
+            ],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")]
         ]
     )
 def create_welcome_keyboard() -> InlineKeyboardMarkup:
@@ -167,14 +169,13 @@ def create_back_to_wallets_keyboard() -> InlineKeyboardMarkup:
 #     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def create_deal_wallet_selection(wallets: list, active_wallet: str) -> InlineKeyboardMarkup:
-    """Клавиатура выбора кошелька для сделки"""
     buttons = []
 
-    # Строка с кошельками
+    # Кнопки кошельков
     wallet_row = [
         InlineKeyboardButton(
             text=f"{i + 1}✅" if w == active_wallet else f"{i + 1}",
-            callback_data=f"deal_wallet_{i}"
+            callback_data=f"choose_wallet_{i}"  # Изменено на select_wallet_
         )
         for i, w in enumerate(wallets)
     ]
@@ -183,7 +184,7 @@ def create_deal_wallet_selection(wallets: list, active_wallet: str) -> InlineKey
     # Кнопки навигации
     nav_row = [
         InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"),
-        InlineKeyboardButton(text="Далее ➡️", callback_data="deal_wallet_next")
+        InlineKeyboardButton(text="Далее ➡️", callback_data="proceed_wallet")  # Новый callback
     ]
     buttons.append(nav_row)
 
