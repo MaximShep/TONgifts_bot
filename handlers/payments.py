@@ -110,3 +110,133 @@ async def confirm_gift(deal, callback: CallbackQuery):
             chat_id=deal.seller_id,
             text="Ошибка перевода средств. Свяжитесь с поддержкой."
         )
+
+#
+# from aiogram import Router, F
+# from aiogram.types import CallbackQuery, Message
+# from aiogram.fsm.context import FSMContext
+# from aiogram.enums import ParseMode
+#
+# from handlers.deals import BuyerStates
+# from ton_service import TonService
+# from database.repository import update_deal_status, get_deal_by_id
+# from utils.keyboards import create_payment_keyboard  # Если нужна клавиатура для других действий
+# from config import Config
+# from utils.nft_checker import check_nft_owner
+# import asyncio
+#
+# router = Router()
+# ton_service = TonService()
+#
+#
+# @router.callback_query(F.data.startswith("start_payment_"))
+# async def start_payment(callback: CallbackQuery, state: FSMContext):
+#     deal_id = callback.data.split("_")[2]
+#     deal = get_deal_by_id(deal_id)
+#
+#     if not deal:
+#         await callback.answer("Сделка не найдена!")
+#         return
+#
+#     amount = deal.comission_price
+#     comment = f"DEAL_{deal.id}"
+#
+#     await callback.message.answer(
+#         f"💰 Переведите *{amount}* TON на адрес:\n"
+#         f"`{Config.ADMIN_TON_ADDRESS}`\n\n"
+#         f"⚠️ Обязательно введите комментарий: `{comment}`",
+#         parse_mode=ParseMode.MARKDOWN
+#     )
+#
+#     # Запускаем автоматическую проверку платежа
+#     asyncio.create_task(automatic_payment_monitor(callback, deal))
+#
+#     # Уведомляем продавца
+#     await callback.message.bot.send_message(
+#         chat_id=deal.seller_id,
+#         text="Покупатель начал оплату. Ожидайте подтверждения."
+#     )
+#
+#
+# async def automatic_payment_monitor(callback: CallbackQuery, deal):
+#     """Автоматически проверяет оплату каждые 3 секунды"""
+#     max_time = 600  # 10 минут
+#     interval = 3  # Интервал проверки
+#
+#     for _ in range(max_time // interval):
+#         if await check_payment(deal):
+#             await process_payment(callback, deal)
+#             return
+#         await asyncio.sleep(interval)
+#
+#     # Если время истекло
+#     await callback.message.answer("❌ Время ожидания платежа истекло. Сделка отменена.")
+#     update_deal_status(deal.id, "canceled")
+#
+#
+# async def check_payment(deal):
+#     """Проверяет наличие платежа"""
+#     return ton_service.check_payment(
+#         deal_id=deal.id,
+#         amount=deal.comission_price,
+#         address=Config.ADMIN_TON_ADDRESS
+#     )
+#
+#
+# async def process_payment(callback: CallbackQuery, deal):
+#     """Обрабатывает успешную оплату"""
+#     await callback.message.answer("✅ Оплата подтверждена! Ожидайте передачи подарка...")
+#     await callback.message.bot.send_message(
+#         chat_id=deal.seller_id,
+#         text="🎁 Оплата получена. Передайте NFT покупателю."
+#     )
+#
+#     # Начинаем проверку передачи NFT
+#     asyncio.create_task(monitor_nft_transfer(callback, deal))
+#
+#
+# async def monitor_nft_transfer(callback: CallbackQuery, deal):
+#     max_time = 600  # 10 минут
+#     interval = 3
+#
+#     for _ in range(max_time // interval):
+#         nft_owner = check_nft_owner(deal.gift_name)
+#         buyer_username = callback.from_user.username
+#
+#         if nft_owner == buyer_username:
+#             await finalize_deal(callback, deal)
+#             return
+#
+#         await asyncio.sleep(interval)
+#
+#     # Возврат средств при неудаче
+#     await callback.message.answer("⏳ Время истекло. Начинаем возврат средств...")
+#     await ton_service.refund_payment(deal.buyer_address, deal.comission_price)
+#     update_deal_status(deal.id, "refunded")
+#
+#
+# async def finalize_deal(callback: CallbackQuery, deal):
+#     """Завершает сделку и переводит средства"""
+#     await callback.message.bot.send_message(
+#         chat_id=deal.buyer_id,
+#         text=f"✅ NFT получен! Сделка завершена\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
+#         parse_mode=ParseMode.MARKDOWN
+#     )
+#     success = await ton_service.transfer_funds(
+#         to_address=deal.ton_address,
+#         amount=deal.price,
+#         deal_id=deal.id
+#     )
+#
+#     if success:
+#         update_deal_status(deal.id, "completed")
+#         await callback.message.bot.send_message(
+#             chat_id=deal.seller_id,
+#             text=f"✅ Сделка завершена! Вам переведено {deal.price} TON\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
+#             parse_mode=ParseMode.MARKDOWN
+#         )
+#     else:
+#         await callback.message.bot.send_message(
+#             chat_id=deal.seller_id,
+#             text="❌ Ошибка перевода средств. Свяжитесь с поддержкой."
+#         )

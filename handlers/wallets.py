@@ -93,7 +93,9 @@ async def add_wallet(callback: CallbackQuery, state: FSMContext):
 @router.message(SellerStates.wait_ton_address_in_wallet)
 async def process_add_wallet(message: Message, state: FSMContext):
     if not validate_ton_address(message.text):
-        await message.answer(
+        await message.answer_photo(
+        photo=FSInputFile("assets/error.png"),
+        caption=
             "⚠️ <b>Неверный формат адреса!</b>\n"
             "Адрес должен начинаться с EQ или UQ и содержать 48 символов",
             parse_mode=ParseMode.HTML,
@@ -117,7 +119,9 @@ async def delete_wallet(callback: CallbackQuery, state: FSMContext):
     wallets = user.wallets if user else []
 
     if not wallets:
-        await callback.answer("У вас нет сохраненных кошельков", show_alert=True)
+        await callback.answer_photo(
+        photo=FSInputFile("assets/error.png"),
+        caption="У вас нет сохраненных кошельков", show_alert=True)
         return
 
     await callback.message.delete()
@@ -136,7 +140,9 @@ async def confirm_deletion(callback: CallbackQuery, state: FSMContext):
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
 
     if not user or wallet_idx >= len(user.wallets):
-        await callback.answer("Ошибка выбора кошелька", show_alert=True)
+        await callback.answer_photo(
+        photo=FSInputFile("assets/error.png"),
+        caption="Ошибка выбора кошелька", show_alert=True)
         return
 
     selected_wallet = user.wallets[wallet_idx]

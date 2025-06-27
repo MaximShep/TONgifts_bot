@@ -4,7 +4,8 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard, create_deal_wallet_selection
+from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, \
+    create_welcome_keyboard, create_deal_wallet_selection, deal_address_keyboard_seller, deal_link_keyboard_seller
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, update_ton_address, add_user_wallet, set_active_wallet
@@ -68,12 +69,16 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
     """
     deal = get_deal_by_hex(hex_id)
     if not deal:
-        await message.answer("Сделка не найдена. Проверьте HEX-код.")
+        await message.answer_photo(
+        photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption="Сделка не найдена. Проверьте HEX-код.")
         return
     
     # Проверяем, не является ли пользователь уже участником сделки
     if deal.seller_id == message.from_user.id or deal.buyer_id == message.from_user.id:
-        await message.answer("Вы уже являетесь участником этой сделки.")
+        await message.answer_photo(
+        photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption="Вы уже являетесь участником этой сделки.")
         return
     
     save_or_update_user(
@@ -91,16 +96,19 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         await state.update_data(gift_name=deal.gift_name)
         await state.update_data(comission_price=deal.comission_price)
         await state.update_data(buyer_id=deal.buyer_id)
-        await message.answer(
+        await message.answer_photo(
+        photo=FSInputFile("assets/hello.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption=
             f"<b>🔗 Вы присоединились к сделке #{deal.id}</b>\n\n"
             f"🛍️ Вы продаете: {deal.gift_name}\n"
             f"💰 Стоимость NFT: {deal.price} TON\n"
             f"<i>(комиссию сервиса 5% оплачивает покупатель)</i>",
             parse_mode=ParseMode.HTML,
         )
-        await message.bot.send_message(
+        await message.bot.send_photo(
             chat_id=deal.buyer_id,
-            text=f"Продавец @{message.from_user.username} присоединился к сделке!"
+            photo=FSInputFile("assets/hello.png"),
+            caption=f"Продавец @{message.from_user.username} присоединился к сделке!"
         )
         await message.answer("💳 Введите ваш TON-адрес:")
         await state.set_state(SellerStates.wait_ton_address)
@@ -108,17 +116,20 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         update_deal_buyer(deal.id, buyer_id=message.from_user.id)
 
         # Уведомления
-        await message.answer(
+        await message.answer_photo(
+        photo=FSInputFile("assets/hello.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption=
             f"<b>🔗 Вы присоединились к сделке #{deal.id}</b>\n\n"
             f"🛍️ Вы покупаете: {deal.gift_name}\n"
             f"💰 Сумма к оплате: <b>{deal.comission_price} TON</b>\n\n"
-            f"<i>Комиссия сервисса составляет 5% от стоимости сделки (при сумме сделки менее 0.01 TON, комиссия составляет 0.01 TON)</i>",
+            f"<i>Комиссия сервиса составляет 5% от стоимости сделки (при сумме сделки менее 0.01 TON, комиссия составляет 0.01 TON)</i>",
             parse_mode=ParseMode.HTML,
             reply_markup=create_start_payment_keyboard(deal.id)
         )
-        await message.bot.send_message(
+        await message.bot.send_photo(
             chat_id=deal.seller_id,
-            text=f"Покупатель @{message.from_user.username} присоединился к сделке!"
+            photo=FSInputFile("assets/hello.png"),
+            caption=f"Покупатель @{message.from_user.username} присоединился к сделке!"
         )
         await state.clear()  # Сброс состояния после присоединения [[6]]
     # Запуск процесса оплаты
@@ -200,6 +211,7 @@ async def proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
         photo=FSInputFile("assets/link.png"),
         caption=f"💳Выбранный TON-адрес:\n<code>{data["ton_address"]}</code>\n\n🔗 Отправьте ссылку на подарок:",
         parse_mode=ParseMode.HTML,
+        reply_markup=deal_address_keyboard_seller()
     )
     await state.set_state(SellerStates.wait_gift_name)
 
@@ -208,7 +220,25 @@ async def proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
 @router.message(SellerStates.select_wallet_deal)
 async def process_new_deal_wallet(message: Message, state: FSMContext):
     if not validate_ton_address(message.text):
-        await message.answer("⚠️ Неверный формат адреса. Попробуйте снова:")
+        user = session.query(User).filter_by(telegram_id=message.from_user.id, ).first()
+        wallets = user.wallets if user else []
+        active_wallet = user.active_wallet if user else None
+        text = (
+                "❗️НЕВЕРНЫЙ формат TON-адреса. <u><i>Попробуйте снова</i></u>❗️\n" +
+                "💼 <b>Выберите КОШЕЛЕК для сделки (на него придут ТОНы покупателя):</b>\n\n" +
+                "\n".join([
+                    f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
+                    for i, w in enumerate(wallets)
+                ]) +
+                ("\n😭Нет сохраненных кошельков" if not wallets else "") +
+                "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
+        )
+        await message.answer_photo(
+            photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
+            caption=text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=create_deal_wallet_selection(wallets, active_wallet)
+        )
         return
 
     add_user_wallet(message.from_user.id, message.text)
@@ -219,6 +249,7 @@ async def process_new_deal_wallet(message: Message, state: FSMContext):
         photo=FSInputFile("assets/link.png"),
         caption=f"💳Выбранный TON-адрес:\n<code>{data["ton_address"]}</code>\n\n🔗 Отправьте ссылку на подарок:",
         parse_mode=ParseMode.HTML,
+        reply_markup=deal_address_keyboard_seller()
     )
     await state.set_state(SellerStates.wait_gift_name)
 
@@ -241,8 +272,9 @@ async def process_seller_role(callback: CallbackQuery, state: FSMContext):
             "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
     )
 
-    await callback.message.answer(
-        text=text,
+    await callback.message.answer_photo(
+        photo=FSInputFile("assets/selectWallet.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption=text,
         parse_mode=ParseMode.HTML,
         reply_markup=create_deal_wallet_selection(wallets, active_wallet)
     )
@@ -253,6 +285,7 @@ async def cancel_deal(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer(f"Сделка отменена")
     await go_menu(callback.message, state)
+
 @router.callback_query(F.data == "role_buyer")
 async def process_buyer_role(callback: CallbackQuery, state: FSMContext):
     await state.update_data(ton_address="")
@@ -267,7 +300,10 @@ async def process_buyer_role(callback: CallbackQuery, state: FSMContext):
 @router.message(SellerStates.wait_ton_address)
 async def process_ton_address(message: Message, state: FSMContext):
     if not validate_ton_address(message.text):
-        await message.answer("Неверный формат TON-адреса. Попробуйте снова:")
+        await message.answer_photo(
+        photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption="Неверный формат TON-адреса. Попробуйте снова:",
+        )
         return
 
     # Добавляем кошелек и устанавливаем активным
@@ -296,19 +332,24 @@ async def process_ton_address(message: Message, state: FSMContext):
     else:
         await message.answer_photo(
             photo=FSInputFile("assets/link.png"),
-            caption="🔗 Отправьте ссылку на подарок:"
+            caption="🔗 Отправьте ссылку на подарок:",
         )
         await state.set_state(SellerStates.wait_gift_name)
 
 @router.message(SellerStates.wait_gift_name)
 async def process_gift_name(message: Message, state: FSMContext):
     if not validate_tg_nft_link(message.text):
-        await message.answer("Неверный формат ссылки. Попробуйте снова:", ParseMode.MARKDOWN)
+        await message.answer_photo(
+        photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption="Неверный формат ссылки. Попробуйте снова:",
+        reply_markup = deal_address_keyboard_seller())
         return
     await state.update_data(gift_name=message.text)
     await message.answer_photo(
         photo=FSInputFile("assets/howMuch.png"),
-        caption="💵 Введите цену подарка в TON (в формате 0.01):")
+        caption="💵 Введите цену подарка в TON (в формате 0.01):",
+        reply_markup=deal_link_keyboard_seller()
+    )
     await state.set_state(SellerStates.wait_price)
 
 
@@ -317,7 +358,8 @@ async def process_price(message: Message, state: FSMContext):
     if not validate_price(message.text):
         await message.answer_photo(
         photo=FSInputFile("assets/howMuch.png"),
-        caption="Цена должна быть числом больше 0. Для десятичного значения используйте '.'\nПопробуйте снова:")
+        caption="ЦЕНА должна быть числом БОЛЬШЕ 0. \n<i>Для десятичного значения используйте '.'</i>\n\nПопробуйте снова:",
+        reply_markup=deal_link_keyboard_seller())
         return
 
     data = await state.get_data()

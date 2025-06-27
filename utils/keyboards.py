@@ -137,36 +137,13 @@ def create_back_to_wallets_keyboard() -> InlineKeyboardMarkup:
         ]
     ])
 
-
-# def create_seller_wallet_selection(wallets: list, active_wallet: str) -> InlineKeyboardMarkup:
-#     """Клавиатура выбора кошелька для сделки"""
-#     buttons = []
-#
-#     # Строка с номерами кошельков
-#     wallet_row = [
-#         InlineKeyboardButton(
-#             text=f"{i + 1}✅" if w == active_wallet else f"{i + 1}",
-#             callback_data=f"seller_wallet_{i}"
-#         )
-#         for i, w in enumerate(wallets)
-#     ]
-#     buttons.append(wallet_row)
-#
-#     # Кнопки управления
-#     control_buttons = [
-#         InlineKeyboardButton(text="➕ Добавить", callback_data="add_new_wallet"),
-#         InlineKeyboardButton(text="❌ Удалить", callback_data="delete_wallet")
-#     ]
-#     buttons.append(control_buttons)
-#
-#     # Кнопки навигации
-#     nav_buttons = [
-#         InlineKeyboardButton(text="🔙 В меню", callback_data="back_to_menu"),
-#         InlineKeyboardButton(text="Далее ➡️", callback_data="proceed_wallet")
-#     ]
-#     buttons.append(nav_buttons)
-#
-#     return InlineKeyboardMarkup(inline_keyboard=buttons)
+def deal_address_keyboard_seller() -> InlineKeyboardMarkup:
+    buttons = [[InlineKeyboardButton(text="🔙 Назад", callback_data="role_seller")],
+               [InlineKeyboardButton(text="❌ Отменить сделку", callback_data="cancel_deal")]]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+def deal_link_keyboard_seller() -> InlineKeyboardMarkup:
+    buttons = [[InlineKeyboardButton(text="❌ Отменить сделку", callback_data="cancel_deal")]]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def create_deal_wallet_selection(wallets: list, active_wallet: str) -> InlineKeyboardMarkup:
     buttons = []
@@ -183,7 +160,7 @@ def create_deal_wallet_selection(wallets: list, active_wallet: str) -> InlineKey
 
     # Кнопки навигации
     nav_row = [
-        InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu"),
+        InlineKeyboardButton(text="🔙 Назад", callback_data="create_deal"),
         InlineKeyboardButton(text="Далее ➡️", callback_data="proceed_wallet")  # Новый callback
     ]
     buttons.append(nav_row)
