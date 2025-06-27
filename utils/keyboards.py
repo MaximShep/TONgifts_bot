@@ -62,25 +62,54 @@ def create_start_payment_keyboard(deal_id: str) -> InlineKeyboardMarkup:
 
 
 def create_wallets_keyboard(wallets: list, active_wallet: str) -> InlineKeyboardMarkup:
+    """Клавиатура управления кошельками с улучшенным интерфейсом"""
     buttons = []
-    for idx, wallet in enumerate(wallets, 1):
-        label = f"{idx}✅" if wallet == active_wallet else f"{idx}"
-        buttons.append(
-            InlineKeyboardButton(text=label, callback_data=f"select_wallet_{idx}")
+
+    # Строка с номерами кошельков
+    wallet_row = [
+        InlineKeyboardButton(
+            text=f"{i + 1}✅" if wallet == active_wallet else f"{i + 1}",
+            callback_data=f"select_wallet_{i + 1}"
         )
+        for i, wallet in enumerate(wallets)
+    ]
+    buttons.append(wallet_row)
 
-    keyboard = []
-    # Формируем строки по 2 кнопки
-    for i in range(0, len(buttons), 2):
-        row = buttons[i:i + 2]
-        keyboard.append(row)
+    # Кнопки управления
+    control_buttons = [
+        InlineKeyboardButton(text="➕ Добавить", callback_data="add_wallet"),
+        InlineKeyboardButton(text="❌ Удалить", callback_data="delete_wallet")
+    ]
+    buttons.append(control_buttons)
 
-    # Добавляем кнопки управления
-    if wallets:
-        keyboard.append([InlineKeyboardButton(text="❌ Удалить кошелек", callback_data="delete_wallet")])
-    keyboard.append([InlineKeyboardButton(text="➕ Добавить кошелек", callback_data="add_wallet")])
+    # Кнопка возврата в меню
+    buttons.append([InlineKeyboardButton(text="🔙 В меню", callback_data="back_to_menu")])
 
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def create_delete_wallet_keyboard(wallets: list) -> InlineKeyboardMarkup:
+    """Клавиатура выбора кошелька для удаления"""
+    buttons = []
+
+    # Строка с номерами кошельков
+    wallet_row = [
+        InlineKeyboardButton(
+            text=str(idx + 1),
+            callback_data=f"delete_select_{idx}"
+        )
+        for idx in range(len(wallets))
+    ]
+    buttons.append(wallet_row)
+
+    # Кнопки управления
+    control_buttons = [
+        InlineKeyboardButton(text="🔙 К кошелькам", callback_data="wallet"),
+        InlineKeyboardButton(text="🔝 В меню", callback_data="back_to_menu")
+    ]
+    buttons.append(control_buttons)
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def create_back_to_menu_keyboard() -> InlineKeyboardMarkup:
     """Кнопка 'В меню'"""
@@ -89,3 +118,19 @@ def create_back_to_menu_keyboard() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="🔙 В меню", callback_data="back_to_menu")]
         ]
     )
+def create_delete_confirmation_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура подтверждения удаления"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="❌ Удалить", callback_data="confirm_delete"),
+            InlineKeyboardButton(text="🔙 Отмена", callback_data="cancel_delete")
+        ]
+    ])
+def create_back_to_wallets_keyboard() -> InlineKeyboardMarkup:
+    """Кнопки возврата в кошельки и меню"""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="🔙 К кошелькам", callback_data="wallet"),
+            InlineKeyboardButton(text="🔝 В меню", callback_data="back_to_menu")
+        ]
+    ])

@@ -111,3 +111,22 @@ def set_active_wallet(telegram_id: int, wallet_address: str):
     if user and wallet_address in user.wallets:
         user.active_wallet = wallet_address
         session.commit()
+
+
+def delete_user_wallet(telegram_id: int, wallet_address: str):
+    """Удаляет кошелек из списка пользователя"""
+    with Session() as session:
+        user = session.query(User).filter_by(telegram_id=telegram_id).first()
+        if user and wallet_address in user.wallets:
+            # Удаляем кошелек из списка
+            user.wallets = [w for w in user.wallets if w != wallet_address]
+
+            # Если удаляемый кошелек был активным
+            if user.active_wallet == wallet_address:
+                # Если остались кошельки - выбираем первый
+                if user.wallets:
+                    user.active_wallet = user.wallets[0]
+                else:
+                    user.active_wallet = None
+
+            session.commit()

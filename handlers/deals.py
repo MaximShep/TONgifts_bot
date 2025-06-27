@@ -4,10 +4,10 @@ from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKe
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 
-from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard, create_wallets_keyboard, create_back_to_menu_keyboard
+from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, create_welcome_keyboard, create_wallets_keyboard, create_back_to_menu_keyboard, create_delete_wallet_keyboard, create_delete_confirmation_keyboard, create_back_to_wallets_keyboard
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
-from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, update_ton_address, get_user_wallets, add_user_wallet, set_active_wallet
+from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, update_ton_address, get_user_wallets, add_user_wallet, set_active_wallet, delete_user_wallet
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
@@ -24,6 +24,10 @@ class SellerStates(StatesGroup):
     wait_gift_name = State()
     wait_price = State()
     wait_ton_address_in_wallet = State()
+
+class DeleteWalletStates(StatesGroup):
+    select_wallet = State()  # Выбор кошелька для удаления
+    confirm = State()  # Подтверждение удаления
 
 
 class BuyerStates(StatesGroup):
@@ -142,56 +146,127 @@ async def show_wallets(callback: CallbackQuery):
         user = User(telegram_id=callback.from_user.id, username=callback.from_user.username, wallets=[])
         session.add(user)
         session.commit()
-
     wallets = user.wallets
     active_wallet = user.active_wallet
 
+    # Формируем текст с HTML-форматированием
+    wallets_text = "<b>💼 Ваши КОШЕЛЬКИ:</b>\n\n" + (
+        "\n".join([
+            f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
+            for i, w in enumerate(wallets)
+        ]) if wallets else "😭Нет сохраненных кошельков"
+    )
+
     await callback.message.delete()
     await callback.message.answer_photo(
-        photo=FSInputFile("assets/howMuch.png"),
-        caption="💼 Ваши кошельки:\n" +
-                ("\n".join([f"{i + 1}. {w} {'✅' if w == active_wallet else ''}" for i, w in enumerate(wallets)])
-                 if wallets else "Нет сохраненных кошельков"),
+        photo=FSInputFile("assets/wallets.png"),
+        caption=wallets_text,
+        parse_mode=ParseMode.HTML,
         reply_markup=create_wallets_keyboard(wallets, active_wallet)
     )
 
+
 @router.callback_query(F.data.startswith("select_wallet_"))
 async def select_wallet(callback: CallbackQuery):
-    """Обработка выбора кошелька"""
     wallet_idx = int(callback.data.split("_")[-1]) - 1
     wallets = get_user_wallets(callback.from_user.id)
-    if 0 <= wallet_idx < len(wallets):
-        set_active_wallet(callback.from_user.id, wallets[wallet_idx])
-        await callback.answer(f"Активный кошелек: {wallets[wallet_idx]}")
 
+    if 0 <= wallet_idx < len(wallets):
+        selected_wallet = wallets[wallet_idx]
+        set_active_wallet(callback.from_user.id, selected_wallet)
+
+        # Обновляем сообщение после выбора
+        await show_wallets(callback)  # Перерисовываем интерфейс
+        await callback.answer(f"Активный кошелек: {selected_wallet}")
+
+# При нажатии "Добавить кошелек"
 @router.callback_query(F.data == "add_wallet")
 async def add_wallet(callback: CallbackQuery, state: FSMContext):
-    """Начало добавления нового кошелька"""
     await callback.message.delete()
     await callback.message.answer(
-        "📥 Введите адрес нового кошелька:",
-        reply_markup=create_back_to_menu_keyboard()
+        "📥 <b>Введите адрес TON-кошелька</b>\n\n"
+        "Пример: EQ... или UQ...",
+        parse_mode=ParseMode.HTML,
+        reply_markup=create_back_to_wallets_keyboard()
     )
-    await state.set_state(SellerStates.wait_ton_address_in_wallet)  # Используем существующее состояние
+    await state.set_state(SellerStates.wait_ton_address_in_wallet)
 
+# Обработка ввода адреса
 @router.message(SellerStates.wait_ton_address_in_wallet)
 async def process_add_wallet(message: Message, state: FSMContext):
-    if validate_ton_address(message.text):
-        add_user_wallet(message.from_user.id, message.text)
-        user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
-        print(f"User wallets after add: {user.wallets}")  # Отладочный вывод
-        await message.answer("✅ Кошелек добавлен!", reply_markup=create_back_to_menu_keyboard())
-    else:
-        await message.answer("⚠️ Неверный формат адреса")
+    if not validate_ton_address(message.text):
+        await message.answer(
+            "⚠️ <b>Неверный формат адреса!</b>\n"
+            "Адрес должен начинаться с EQ или UQ и содержать 48 символов",
+            parse_mode=ParseMode.HTML,
+            reply_markup=create_back_to_wallets_keyboard()
+        )
+        return
+
+    add_user_wallet(message.from_user.id, message.text)
+    await message.answer(
+        "✅ <b>Кошелек добавлен!</b>",
+        parse_mode=ParseMode.HTML,
+        reply_markup=create_back_to_wallets_keyboard()
+    )
     await state.clear()
 
+
+# Заменить существующий обработчик удаления:
 @router.callback_query(F.data == "delete_wallet")
-async def delete_wallet(callback: CallbackQuery):
-    """Обработка попытки удаления кошелька"""
-    await callback.answer(
-        "🚧 Эта функция временно недоступна",
-        show_alert=True
+async def delete_wallet(callback: CallbackQuery, state: FSMContext):
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    wallets = user.wallets if user else []
+
+    if not wallets:
+        await callback.answer("У вас нет сохраненных кошельков", show_alert=True)
+        return
+
+    await callback.message.delete()
+    await callback.message.answer(
+        "Выберите кошелек для удаления:\n" +
+        "\n".join([f"{i + 1}.{wallet}" for i, wallet in enumerate(wallets)]),
+        reply_markup=create_delete_wallet_keyboard(wallets)
     )
+    await state.set_state(DeleteWalletStates.select_wallet)
+
+
+# Добавить обработчик выбора кошелька:
+@router.callback_query(DeleteWalletStates.select_wallet, F.data.startswith("delete_select_"))
+async def confirm_deletion(callback: CallbackQuery, state: FSMContext):
+    wallet_idx = int(callback.data.split("_")[-1])
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+
+    if not user or wallet_idx >= len(user.wallets):
+        await callback.answer("Ошибка выбора кошелька", show_alert=True)
+        return
+
+    selected_wallet = user.wallets[wallet_idx]
+    await state.update_data(selected_wallet=selected_wallet)
+
+    await callback.message.delete()
+    await callback.message.answer(
+        f"Удалить кошелек?\n\n{selected_wallet}",
+        reply_markup=create_delete_confirmation_keyboard()
+    )
+    await state.set_state(DeleteWalletStates.confirm)
+
+
+# Подтверждение удаления
+@router.callback_query(DeleteWalletStates.confirm)
+async def process_deletion(callback: CallbackQuery, state: FSMContext):
+    if callback.data == "cancel_delete":
+        await show_wallets(callback)
+        await state.clear()
+        return
+
+    data = await state.get_data()
+    wallet = data.get("selected_wallet")
+    delete_user_wallet(callback.from_user.id, wallet)
+
+    await callback.answer("✅ Кошелек удален", show_alert=True)
+    await show_wallets(callback)
+    await state.clear()
 
 @router.callback_query(F.data == "back_to_menu")
 async def back_to_menu(callback: CallbackQuery, state: FSMContext):
