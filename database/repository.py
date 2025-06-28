@@ -3,7 +3,7 @@ from typing import Type
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, InstrumentedAttribute
 
-from database.models import Base, Deal, User # Импорт модели Deal [[3]]
+from database.models import Base, Deal, User, Refund # Импорт модели Deal [[3]]
 from utils.hex_generator import generate_hex_id  # Импорт генератора HEX [[9]]
 from config import Config
 
@@ -132,9 +132,7 @@ def delete_user_wallet(telegram_id: int, wallet_address: str):
             session.commit()
 
 def get_user_language(telegram_id: int) -> InstrumentedAttribute | None:
-    print(telegram_id)
     user = session.query(User).filter_by(telegram_id=telegram_id).first()
-    print(user)
     return user.language if user and user.language in ['ru', 'en'] else 'en'
 
 def update_user_language(telegram_id: int, language: str):
@@ -147,3 +145,19 @@ def update_user_language(telegram_id: int, language: str):
         new_user = User(telegram_id=telegram_id, language=language)
         session.add(new_user)
         session.commit()
+
+def create_refund(
+    deal_id: str,                # HEX как строка
+    wallet_address: str,
+    refund_amount: float,
+):
+    refund = Refund(
+        deal_id=deal_id,
+        wallet_address=wallet_address,
+        refund_amount=refund_amount,
+    )
+    session.add(refund)
+    session.commit()
+
+def check_refund_exists( deal_id: str) -> bool:
+    return session.query(Refund).filter(Refund.deal_id == deal_id).first() is not None

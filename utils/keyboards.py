@@ -105,6 +105,12 @@ def deal_address_keyboard_seller(user_lang: str = 'en') -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=get_text('cancel_deal', user_lang), callback_data="cancel_deal")]
     ])
 
+def deal_address_keyboard_buyer(user_lang: str = 'en') -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="create_deal")],
+        [InlineKeyboardButton(text=get_text('cancel_deal', user_lang), callback_data="cancel_deal")]
+    ])
+
 def deal_link_keyboard_seller(user_lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=get_text('cancel_deal', user_lang), callback_data="cancel_deal")]
@@ -120,15 +126,34 @@ def create_deal_wallet_selection(wallets: list, active_wallet: str, user_lang: s
     buttons.extend([
         [
             InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="create_deal"),
-            InlineKeyboardButton(text=get_text('proceed_button', user_lang), callback_data="proceed_wallet")
+            InlineKeyboardButton(text=get_text('cancel_deal', user_lang), callback_data="cancel_deal")
         ],
-        [InlineKeyboardButton(text=get_text('cancel_deal', user_lang), callback_data="cancel_deal")]
+        [InlineKeyboardButton(text=get_text('proceed_button', user_lang), callback_data="proceed_wallet")]
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def create_language_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=get_text('russian', user_lang), callback_data="lang_ru")],
-        [InlineKeyboardButton(text=get_text('english', user_lang), callback_data="lang_en")],
-        [InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="back_to_menu")]
+    buttons = []
+    buttons.append([
+        InlineKeyboardButton(text=get_text('russian', user_lang), callback_data="lang_ru"),
+        InlineKeyboardButton(text=get_text('english', user_lang), callback_data="lang_en")
     ])
+    buttons.append([InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="back_to_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def join_deal_wallet_selection(wallets: list, active_wallet: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
+    buttons = []
+    wallet_row = [
+        InlineKeyboardButton(text=f"{i + 1}✅" if w == active_wallet else f"{i + 1}", callback_data=f"choose_when_join_wallet_{i}")
+        for i, w in enumerate(wallets)
+    ]
+    buttons.append(wallet_row)
+    buttons.extend([
+        [
+            InlineKeyboardButton(text=get_text('language_button', user_lang), callback_data="join_and_change_language"),
+            InlineKeyboardButton(text=get_text('support_button', user_lang), url="https://t.me/MivelonGuarantor_SupportBot ")
+        ],
+        [InlineKeyboardButton(text=get_text('leave_button', user_lang), callback_data="leave_deal")],
+        [InlineKeyboardButton(text=get_text('proceed_button', user_lang), callback_data="proceed_join_wallet")]
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

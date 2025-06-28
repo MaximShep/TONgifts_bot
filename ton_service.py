@@ -5,7 +5,7 @@ import logging
 import asyncio
 from pytoniq import WalletV3R2, LiteBalancer  # Можно заменить на WalletV3R1, WalletV3R2, WalletV4R1 WalletV4R2
 from tonsdk.utils import to_nano, Address
-from database.repository import update_address_buyer
+from database.repository import update_address_buyer, check_refund_exists, create_refund
 
 
 class TonService:
@@ -55,27 +55,45 @@ class TonService:
             # Проверяем платежи с верным комментарием, но НЕВЕРНОЙ СУММОЙ
             for tx in transactions:
                 in_msg = tx.get("in_msg", {})
+                idshnik = in_msg.get("hash", "")
                 amount = in_msg.get("value", 0)
                 comment = in_msg.get("decoded_body", {}).get("text", "")
                 buyer_address = in_msg.get("source", {}).get("address", "")
 
                 if pattern.search(comment) and amount < expected_amount:
                     print(f"⚠️ Недостаточная сумма: {amount / 10 ** 9} TON вместо {expected_ton}")
-                    await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
-                    print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                    if not check_refund_exists(idshnik):
+                        create_refund(
+                            deal_id=idshnik,
+                            wallet_address=buyer_address,
+                            refund_amount=amount / 10 ** 9,
+                        )
+                        await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
+                        print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                    else:
+                        print('Платеж уже был возвращен')
                     return False
 
             # Проверяем платежи без комментария
             for tx in transactions:
                 in_msg = tx.get("in_msg", {})
+                idshnik = in_msg.get("hash", "")
                 amount = in_msg.get("value", 0)
                 buyer_address = in_msg.get("source", {}).get("address", "")
                 comment = in_msg.get("decoded_body", {}).get("text", "")
 
                 if not comment.strip() and amount == expected_amount:
                     print(f"🚫 Обнаружен платеж без комментария от {buyer_address}")
-                    await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полную сумму
-                    print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                    if not check_refund_exists(idshnik):
+                        create_refund(
+                            deal_id=idshnik,
+                            wallet_address=buyer_address,
+                            refund_amount=amount / 10 ** 9,
+                        )
+                        await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
+                        print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                    else:
+                        print('Платеж уже был возвращен')
                     return False
 
             print("❌ Платеж не найден или сумма не совпадает")

@@ -22,8 +22,10 @@ LEXICON = {
         "cancel_button": "🔙 Отмена",
         "cancel_deal": "❌ Отменить сделку",
         "proceed_button": "Далее ➡️",
-        "russian": "Русский",
-        "english": "English" },
+        "leave_button": "❌ Выйти из сделки",
+        "russian": "🇷🇺Русский",
+        "english": "🇺🇸English"
+    },
     "EN": {
         "menu_message": "You're still in Mivelon Guarantor!\nThis bot ensures secure NFT deals.\nClick the button below to create a deal:",
         "welcome_message": "Welcome to Mivelon Guarantor!\nThis bot ensures secure NFT deals.\nClick the button below to create a deal:",
@@ -46,8 +48,9 @@ LEXICON = {
         "cancel_button": "🔙 Cancel",
         "cancel_deal": "❌ Cancel Deal",
         "proceed_button": "Proceed ➡️",
-        "russian": "Russian",
-        "english": "English"}
+        "leave_button": "❌ Leave Deal",
+        "russian": "🇷🇺Russian",
+        "english": "🇺🇸English"}
 }
 
 def get_text(key: str, user_lang: str = 'ru') -> str:

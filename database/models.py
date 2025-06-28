@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Integer, ForeignKey, JSON, DateTime, Boolean, Enum
+from sqlalchemy import Column, String, Float, Integer, ForeignKey, JSON, DateTime, Boolean, Enum, Numeric
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
@@ -40,3 +40,12 @@ class User(Base):
     language = Column(String(5), default='en')  # Новая колонка
 
     inviter = relationship("User", remote_side=[telegram_id], foreign_keys=[invited_by])
+
+
+class Refund(Base):
+    __tablename__ = "refunds"
+
+    deal_id = Column(String(64), primary_key=True)  # HEX как строка
+    wallet_address = Column(String(255), nullable=False)
+    refund_amount = Column(Numeric(20, 6), nullable=False)
+    losses = Column(Numeric(20, 6), nullable=True)  # Теперь может быть NULL
