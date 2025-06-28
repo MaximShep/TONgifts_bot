@@ -11,7 +11,7 @@ from database.repository import (
     add_user_wallet,
     set_active_wallet,
     delete_user_wallet,
-    session
+    session, get_user_language
 )
 from database.models import User
 from utils.validators import validate_ton_address
@@ -39,6 +39,7 @@ class SellerStates(StatesGroup):
 # Например:
 @router.callback_query(F.data == "wallet")
 async def show_wallets(callback: CallbackQuery):
+    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
     if not user:
         user = User(telegram_id=callback.from_user.id, username=callback.from_user.username, wallets=[])
@@ -60,7 +61,7 @@ async def show_wallets(callback: CallbackQuery):
         photo=FSInputFile("assets/wallets.png"),
         caption=wallets_text,
         parse_mode=ParseMode.HTML,
-        reply_markup=create_wallets_keyboard(wallets, active_wallet)
+        reply_markup=create_wallets_keyboard(wallets, active_wallet, user_lang)
     )
 
 
@@ -80,18 +81,20 @@ async def select_wallet(callback: CallbackQuery):
 # При нажатии "Добавить кошелек"
 @router.callback_query(F.data == "add_wallet")
 async def add_wallet(callback: CallbackQuery, state: FSMContext):
+    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     await callback.message.delete()
     await callback.message.answer(
         "📥 <b>Введите адрес TON-кошелька</b>\n\n"
         "Пример: EQ... или UQ...",
         parse_mode=ParseMode.HTML,
-        reply_markup=create_back_to_wallets_keyboard()
+        reply_markup=create_back_to_wallets_keyboard(user_lang)
     )
     await state.set_state(SellerStates.wait_ton_address_in_wallet)
 
 # Обработка ввода адреса
 @router.message(SellerStates.wait_ton_address_in_wallet)
 async def process_add_wallet(message: Message, state: FSMContext):
+    user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
     if not validate_ton_address(message.text):
         await message.answer_photo(
         photo=FSInputFile("assets/error.png"),
@@ -99,15 +102,14 @@ async def process_add_wallet(message: Message, state: FSMContext):
             "⚠️ <b>Неверный формат адреса!</b>\n"
             "Адрес должен начинаться с EQ или UQ и содержать 48 символов",
             parse_mode=ParseMode.HTML,
-            reply_markup=create_back_to_wallets_keyboard()
+            reply_markup=create_back_to_wallets_keyboard(user_lang)
         )
         return
-
     add_user_wallet(message.from_user.id, message.text)
     await message.answer(
         "✅ <b>Кошелек добавлен!</b>",
         parse_mode=ParseMode.HTML,
-        reply_markup=create_back_to_wallets_keyboard()
+        reply_markup=create_back_to_wallets_keyboard(user_lang)
     )
     await state.clear()
 
@@ -123,12 +125,12 @@ async def delete_wallet(callback: CallbackQuery, state: FSMContext):
         photo=FSInputFile("assets/error.png"),
         caption="У вас нет сохраненных кошельков", show_alert=True)
         return
-
+    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     await callback.message.delete()
     await callback.message.answer(
         "Выберите кошелек для удаления:\n" +
         "\n".join([f"{i + 1}.{wallet}" for i, wallet in enumerate(wallets)]),
-        reply_markup=create_delete_wallet_keyboard(wallets)
+        reply_markup=create_delete_wallet_keyboard(wallets, user_lang)
     )
     await state.set_state(DeleteWalletStates.select_wallet)
 
@@ -147,11 +149,11 @@ async def confirm_deletion(callback: CallbackQuery, state: FSMContext):
 
     selected_wallet = user.wallets[wallet_idx]
     await state.update_data(selected_wallet=selected_wallet)
-
+    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     await callback.message.delete()
     await callback.message.answer(
         f"Удалить кошелек?\n\n{selected_wallet}",
-        reply_markup=create_delete_confirmation_keyboard()
+        reply_markup=create_delete_confirmation_keyboard(user_lang)
     )
     await state.set_state(DeleteWalletStates.confirm)
 

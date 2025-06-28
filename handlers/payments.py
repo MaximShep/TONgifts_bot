@@ -53,7 +53,7 @@ async def automatic_payment_monitor(callback: CallbackQuery, deal):
     print(deal_id)
 
     for _ in range(max_time // interval):
-        if ton_service.check_payment(deal.id, deal.comission_price):
+        if await ton_service.check_payment(deal.id, deal.comission_price):
             await process_payment(callback, deal)
             return
         await asyncio.sleep(interval)
@@ -74,6 +74,7 @@ async def automatic_payment_monitor(callback: CallbackQuery, deal):
 
 async def process_payment(callback: CallbackQuery, deal):
     """Обрабатывает успешную оплату"""
+    update_deal_status(deal.id, "payment_received")
     await callback.message.answer("✅ Оплата подтверждена! Ожидайте передачи подарка...")
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,

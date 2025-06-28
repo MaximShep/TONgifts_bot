@@ -7,6 +7,7 @@ from pytoniq import WalletV3R2, LiteBalancer  # Можно заменить на
 from tonsdk.utils import to_nano, Address
 from database.repository import update_address_buyer
 
+
 class TonService:
     def __init__(self):
         self.base_url = "https://tonapi.io/v2/"
@@ -21,11 +22,11 @@ class TonService:
         self.provider = LiteBalancer.from_mainnet_config()
         await self.provider.start_up()
 
-    def check_payment(self, hex_id: str, expected_ton: float) -> bool:
-        # return True
-        expected_amount = int(expected_ton * 10**9)  # Переводим TON в нанотоны
+    async def check_payment(self, hex_id: str, expected_ton: float) -> bool:
+        expected_amount = int(expected_ton * 10 ** 9)  # Переводим TON в нанотоны
         print("Проверка платежа для HEX:", hex_id)
         url = f"https://tonapi.io/v2/blockchain/accounts/{Config.ADMIN_TON_ADDRESS}/transactions"
+
         try:
             response = requests.get(
                 url,
@@ -39,23 +40,86 @@ class TonService:
             transactions = response.json().get("transactions", [])
             pattern = re.compile(rf"DEAL_{hex_id}|deal\s*#{hex_id}", re.IGNORECASE)
 
+            # Сначала ищем платежи с корректным комментарием и суммой
             for tx in transactions:
-                buyer_adress=tx.get("in_msg", {}).get("source", {}).get("address", "")
-                comment = tx.get("in_msg", {}).get("decoded_body", {}).get("text", "")
-                amount = tx.get("in_msg", {}).get("value", 0)
-                
+                in_msg = tx.get("in_msg", {})
+                amount = in_msg.get("value", 0)
+                comment = in_msg.get("decoded_body", {}).get("text", "")
+                buyer_address = in_msg.get("source", {}).get("address", "")
+
                 if pattern.search(comment) and amount == expected_amount:
-                    print(f"Платеж найден: {tx['hash']}, сумма: {amount/10**9} TON")
-                    update_address_buyer(hex_id, buyer_adress)
+                    print(f"✅ Платеж найден: {tx['hash']}, сумма: {amount / 10 ** 9} TON")
+                    update_address_buyer(hex_id, buyer_address)
                     return True
-                elif pattern.search(comment):
-                    print(f"Найден комментарий, но неверная сумма: {amount/10**9} TON вместо {expected_ton}")
-                    
-            print("Платеж не найден или сумма не совпадает")
+
+            # Проверяем платежи с верным комментарием, но НЕВЕРНОЙ СУММОЙ
+            for tx in transactions:
+                in_msg = tx.get("in_msg", {})
+                amount = in_msg.get("value", 0)
+                comment = in_msg.get("decoded_body", {}).get("text", "")
+                buyer_address = in_msg.get("source", {}).get("address", "")
+
+                if pattern.search(comment) and amount < expected_amount:
+                    print(f"⚠️ Недостаточная сумма: {amount / 10 ** 9} TON вместо {expected_ton}")
+                    await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
+                    print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                    return False
+
+            # Проверяем платежи без комментария
+            for tx in transactions:
+                in_msg = tx.get("in_msg", {})
+                amount = in_msg.get("value", 0)
+                buyer_address = in_msg.get("source", {}).get("address", "")
+                comment = in_msg.get("decoded_body", {}).get("text", "")
+
+                if not comment.strip() and amount == expected_amount:
+                    print(f"🚫 Обнаружен платеж без комментария от {buyer_address}")
+                    await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полную сумму
+                    print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                    return False
+
+            print("❌ Платеж не найден или сумма не совпадает")
             return False
+
         except Exception as e:
-            print(f"Критическая ошибка: {e}")
+            print(f"❗ Критическая ошибка: {e}")
             return False
+
+    # def check_payment(self, hex_id: str, expected_ton: float) -> bool:
+    #     # return True
+    #     expected_amount = int(expected_ton * 10**9)  # Переводим TON в нанотоны
+    #     print("Проверка платежа для HEX:", hex_id)
+    #     url = f"https://tonapi.io/v2/blockchain/accounts/{Config.ADMIN_TON_ADDRESS}/transactions"
+    #     try:
+    #         response = requests.get(
+    #             url,
+    #             headers={"Authorization": f"Bearer {Config.TONAPI_TOKEN}"},
+    #             params={"limit": 150}
+    #         )
+    #         if response.status_code != 200:
+    #             print(f"Ошибка TonAPI: {response.status_code}")
+    #             return False
+    #
+    #         transactions = response.json().get("transactions", [])
+    #         pattern = re.compile(rf"DEAL_{hex_id}|deal\s*#{hex_id}", re.IGNORECASE)
+    #
+    #         for tx in transactions:
+    #             buyer_adress=tx.get("in_msg", {}).get("source", {}).get("address", "")
+    #             comment = tx.get("in_msg", {}).get("decoded_body", {}).get("text", "")
+    #             amount = tx.get("in_msg", {}).get("value", 0)
+    #
+    #             if pattern.search(comment) and amount == expected_amount:
+    #                 print(f"Платеж найден: {tx['hash']}, сумма: {amount/10**9} TON")
+    #                 update_address_buyer(hex_id, buyer_adress)
+    #                 return True
+    #             elif pattern.search(comment):
+    #                 print(f"Найден комментарий, но неверная сумма: {amount/10**9} TON вместо {expected_ton}")
+    #
+    #         print("Платеж не найден или сумма не совпадает")
+    #         return False
+    #     except Exception as e:
+    #         print(f"Критическая ошибка: {e}")
+    #         return False
 
     async def transfer_funds(self, to_address: str, amount_ton: float, deal_id: str) -> bool:
         # return True
@@ -64,8 +128,9 @@ class TonService:
             await provider.start_up()
 
             # mnemonics_from = Config.MNEMONICS
-            wallet = await WalletV3R2.from_mnemonic(provider,  Config.MNEMONICS)  # Попробуйте WalletV3R2 или другие версии
-            
+            wallet = await WalletV3R2.from_mnemonic(provider,
+                                                    Config.MNEMONICS)  # Попробуйте WalletV3R2 или другие версии
+
             raw_address = wallet.address.to_str()
             address_obj = Address(raw_address)
             generated_user_friendly = address_obj.to_string(is_user_friendly=True, is_bounceable=False)
@@ -78,7 +143,7 @@ class TonService:
 
             account_state = await provider.get_account_state(wallet.address)
             print(f"Состояние кошелька: {account_state.state.type_}")
-            print(f"Баланс кошелька: {account_state.balance / 10**9} TON")
+            print(f"Баланс кошелька: {account_state.balance / 10 ** 9} TON")
 
             if account_state.state.type_ == "uninit":
                 await provider.close_all()
@@ -89,7 +154,7 @@ class TonService:
             required_amount = to_nano(amount_ton, 'ton')
             if balance < required_amount:
                 await provider.close_all()
-                print (f"Ошибка: Недостаточно средств. Баланс: {balance / 10**9} TON, требуется: {amount_ton} TON")
+                print(f"Ошибка: Недостаточно средств. Баланс: {balance / 10 ** 9} TON, требуется: {amount_ton} TON")
                 return False
             amount_nano = to_nano(amount_ton, 'ton')
 
@@ -99,9 +164,10 @@ class TonService:
             )
 
             await provider.close_all()
-            print (f"Транзакция отправлена. Хэш будет доступен в TON Explorer через 1-2 минуты. Адрес отправителя: {generated_user_friendly}")
+            print(
+                f"Транзакция отправлена. Хэш будет доступен в TON Explorer через 1-2 минуты. Адрес отправителя: {generated_user_friendly}")
             return True
-        
+
         except Exception as e:
             await provider.close_all()
             print(f"Ошибка при переводе: {str(e)}")
@@ -113,7 +179,8 @@ class TonService:
             await provider.start_up()
 
             # mnemonics_from = Config.MNEMONICS
-            wallet = await WalletV3R2.from_mnemonic(provider, Config.MNEMONICS)  # Попробуйте WalletV3R2 или другие версии
+            wallet = await WalletV3R2.from_mnemonic(provider,
+                                                    Config.MNEMONICS)  # Попробуйте WalletV3R2 или другие версии
 
             raw_address = wallet.address.to_str()
             address_obj = Address(raw_address)

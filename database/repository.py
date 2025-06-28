@@ -1,7 +1,7 @@
 from typing import Type
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, InstrumentedAttribute
 
 from database.models import Base, Deal, User # Импорт модели Deal [[3]]
 from utils.hex_generator import generate_hex_id  # Импорт генератора HEX [[9]]
@@ -130,3 +130,20 @@ def delete_user_wallet(telegram_id: int, wallet_address: str):
                     user.active_wallet = None
 
             session.commit()
+
+def get_user_language(telegram_id: int) -> InstrumentedAttribute | None:
+    print(telegram_id)
+    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+    print(user)
+    return user.language if user and user.language in ['ru', 'en'] else 'en'
+
+def update_user_language(telegram_id: int, language: str):
+    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+    if user:
+        user.language = language
+        session.commit()
+    else:
+        # Создаем нового пользователя с выбранным языком
+        new_user = User(telegram_id=telegram_id, language=language)
+        session.add(new_user)
+        session.commit()
