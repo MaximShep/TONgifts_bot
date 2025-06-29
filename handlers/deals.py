@@ -6,7 +6,7 @@ from aiogram.fsm.state import StatesGroup, State
 
 from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, \
     create_welcome_keyboard, create_deal_wallet_selection, deal_address_keyboard_seller, deal_link_keyboard_seller, \
-    create_language_keyboard, join_deal_wallet_selection
+    create_language_keyboard, join_deal_wallet_selection, deal_address_keyboard_buyer
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, \
@@ -61,7 +61,10 @@ async def cmd_start(message: Message):
     Приветственное сообщение с кнопкой [[1]]
     """
     user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
-
+    save_or_update_user(
+        telegram_id=message.from_user.id,
+        username=message.from_user.username
+    )
     await message.answer_photo(
         photo=FSInputFile("assets/startCover.png"),  # Замените на вашу ссылку или file_id [[1]]
         caption="Добро пожаловать в Mivelon Guarantor!\n\n"
@@ -78,7 +81,10 @@ async def cmd_start(message: Message):
 async def menu_text(message: Message):
     user_id = message.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)
-
+    save_or_update_user(
+        telegram_id=message.from_user.id,
+        username=message.from_user.username
+    )
     await message.answer_photo(
         photo=FSInputFile("assets/menu.png"),
         caption=get_text('menu_message', user_lang),
@@ -150,8 +156,12 @@ async def set_language(callback: CallbackQuery):
 ### создание сделки ПО КОМАНДЕ
 @router.message(F.text.in_({"/create_deal", "Сделка"}))
 async def start_deal_creation(message: Message, state: FSMContext, callback: CallbackQuery):
-    telegram_id = message.from_user.id if message.from_user else callback.from_user.id
+    telegram_id = message.from_user.id
     user_lang = get_user_language(telegram_id)  # # Ваша функция получения языка
+    save_or_update_user(
+        telegram_id=telegram_id,
+        username=message.from_user.username
+    )
     await message.answer_photo(
         photo=FSInputFile("assets/choose.png"),
         caption="🧑‍💻Выберите <u><b>РОЛЬ</b></u> \n\n 🎁<b>Продавец</b> - владелец подарка в данный момент \n 💸<b>Покупатель</b> - тот, кто платит тоны \n\n <i>Для создания сделки нужна <u>ссылка на подарок</u>, можно сразу скопировать её в буфер обмена.</i>",
@@ -186,7 +196,7 @@ async def process_buyer_role(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer_photo(
         photo=FSInputFile("assets/link.png"),
         caption="🔗 Отправьте ссылку на подарок:",
-        reply_markup=deal_address_keyboard_seller(user_lang)
+        reply_markup=deal_address_keyboard_buyer(user_lang)
     )
     await state.set_state(SellerStates.wait_gift_name)
 

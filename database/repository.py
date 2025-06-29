@@ -133,7 +133,7 @@ def delete_user_wallet(telegram_id: int, wallet_address: str):
 
 def get_user_language(telegram_id: int) -> InstrumentedAttribute | None:
     user = session.query(User).filter_by(telegram_id=telegram_id).first()
-    return user.language if user and user.language in ['ru', 'en'] else 'en'
+    return user.language if user and user.language in ['ru', 'en'] else 'ru'
 
 def update_user_language(telegram_id: int, language: str):
     user = session.query(User).filter_by(telegram_id=telegram_id).first()

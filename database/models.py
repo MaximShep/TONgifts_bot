@@ -37,7 +37,7 @@ class User(Base):
     invited_by = Column(Integer, ForeignKey('users.telegram_id'))
     last_activity = Column(DateTime, default=datetime.utcnow)
     dop_column = Column(JSON, default=lambda: {})
-    language = Column(String(5), default='en')  # Новая колонка
+    language = Column(String(5), default='ru')  # Новая колонка
 
     inviter = relationship("User", remote_side=[telegram_id], foreign_keys=[invited_by])
 
