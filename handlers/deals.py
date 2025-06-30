@@ -472,6 +472,86 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         )
 
         await state.clear()
+
+
+@router.callback_query(F.data.startswith("buyer_join_lang_"))
+async def buyer_join_set_language(callback: CallbackQuery):
+    parts = callback.data.split("_")
+    deal_id = parts[-1]
+    lang = parts[-2].lower()
+    user_lang = get_user_language(callback.from_user.id)
+    if lang not in ['ru', 'en']:
+        await callback.answer(get_text('unknown_language', user_lang), show_alert=True)
+        return
+    deal = get_deal_by_hex(deal_id)
+    update_user_language(callback.from_user.id, lang)
+
+    # Перезагружаем пользователя из БД
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    user_lang = user.language if user else 'en'  # Язык по умолчанию
+    text = get_text('join_deal_buyer', user_lang).format(
+        deal_id=deal.id,
+        gift_name=deal.gift_name,
+        price=deal.comission_price,
+        percent=Config.COMMISSION_PERCENT * 100
+    )
+    media = InputMediaPhoto(
+        media=FSInputFile("assets/hello.png"),
+        parse_mode=ParseMode.HTML,
+        caption=text
+    )
+    # Изменяем медиа и подпись одним запросом
+    await callback.message.edit_media(
+        media=media,
+        parse_mode=ParseMode.HTML,
+        reply_markup=create_start_payment_keyboard(deal.id, callback.from_user.id, user_lang)
+    )
+
+
+@router.callback_query(F.data.startswith("seller_join_lang_"))
+async def seller_join_set_language(callback: CallbackQuery, state: FSMContext):
+    lang = callback.data.split("_")[-1].lower()  # Приводим к нижнему регистру
+    user_lang = get_user_language(callback.from_user.id)
+    if lang not in ['ru', 'en']:
+        await callback.answer(get_text('unknown_language', user_lang), show_alert=True)
+        return
+    data = await state.get_data()
+    deal = get_deal_by_hex(data["id"])
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    wallets = user.wallets if user else []
+    active_wallet = user.active_wallet if user else None
+    update_user_language(callback.from_user.id, lang)
+
+    # Перезагружаем пользователя из БД
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    user_lang = user.language if user else 'en'  # Язык по умолчанию
+    text = (
+            get_text('join_deal_seller', user_lang).format(
+                deal_id=deal.id,
+                gift_name=deal.gift_name,
+                price=deal.price,
+                percent=Config.COMMISSION_PERCENT * 100
+            ) +
+            get_text('select_wallet_for_deal', user_lang).format(
+                wallet_list="\n".join([
+                    f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
+                    for i, w in enumerate(wallets)
+                ]),
+                no_wallets=get_text('no_saved_wallets', user_lang) if not wallets else "",
+            )
+    )
+    media = InputMediaPhoto(
+        media=FSInputFile("assets/hello.png"),
+        parse_mode=ParseMode.HTML,
+        caption=text
+    )
+    # Изменяем медиа и подпись одним запросом
+    await callback.message.edit_media(
+        media=media,
+        parse_mode=ParseMode.HTML,
+        reply_markup=join_deal_wallet_selection(wallets, active_wallet, deal.id, callback.from_user.id, user_lang)
+    )
+    await state.set_state(SellerStates.wait_ton_address)
 ### дополнительное состояние при переключении между кошельками при присоединении продавца
 async def deal_change_wallets_when_join(callback: CallbackQuery, state: FSMContext, hex_id: str):
     deal = get_deal_by_hex(hex_id)
@@ -504,6 +584,11 @@ async def deal_change_wallets_when_join(callback: CallbackQuery, state: FSMConte
     )
     await state.set_state(SellerStates.wait_ton_address)
 
+@router.callback_query(F.data == "return_to_join_deal")
+async def return_to_join(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    await callback.message.delete()
+    await deal_change_wallets_when_join(callback, state, data["id"])
 
 # --- Выбор активного кошелька по кнопке [1][2][3]---
 @router.callback_query(SellerStates.wait_ton_address, F.data.startswith("choose_when_join_wallet_"))
@@ -518,7 +603,6 @@ async def join_select_deal_wallet(callback: CallbackQuery, state: FSMContext):
         set_active_wallet(callback.from_user.id, selected_wallet)
         await callback.answer(get_text('wallet_selected', user_lang).format(wallet=selected_wallet))
         await deal_change_wallets_when_join(callback, state, hex_id)
-
 
 # --- Кнопка "Далее" ---
 @router.callback_query(SellerStates.wait_ton_address, F.data == "proceed_join_wallet")

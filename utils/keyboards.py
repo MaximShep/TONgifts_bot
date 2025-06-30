@@ -52,7 +52,7 @@ def create_start_payment_keyboard(deal_id: str, user_id: int, user_lang: str = '
             ),
             InlineKeyboardButton(
                 text=get_text('language_button', user_lang),
-                callback_data="buyer_join_and_change_language"
+                callback_data=f"buyer_join_and_change_language_{deal_id}"
             )
         ],
         [
@@ -66,18 +66,12 @@ def create_start_payment_keyboard(deal_id: str, user_id: int, user_lang: str = '
 
 def not_join_start_payment_keyboard(deal_id: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
     buttons = [
-        [
-            InlineKeyboardButton(
-                text=get_text('language_button', user_lang),
-                callback_data="buyer_join_and_change_language"
-            )
-        ],
-        [
+
             InlineKeyboardButton(
                 text=get_text('start_payment', user_lang),
                 callback_data=f"start_payment_{deal_id}"
             )
-        ]
+
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 def create_wallets_keyboard(wallets: list, active_wallet: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
@@ -203,3 +197,20 @@ def close_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=get_text('close_button', user_lang), callback_data="close")]
     ])
+
+def seller_join_language_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
+    buttons = []
+    buttons.append([
+        InlineKeyboardButton(text=get_text('russian', user_lang), callback_data="seller_join_lang_ru"),
+        InlineKeyboardButton(text=get_text('english', user_lang), callback_data="seller_join_lang_en")
+    ])
+    buttons.append([InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="return_to_join_deal")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def buyer_join_language_keyboard(deal_id: str,user_lang: str = 'en') -> InlineKeyboardMarkup:
+    buttons = []
+    buttons.append([
+        InlineKeyboardButton(text=get_text('russian', user_lang), callback_data=f"buyer_join_lang_ru_{deal_id}"),
+        InlineKeyboardButton(text=get_text('english', user_lang), callback_data=f"buyer_join_lang_en_{deal_id}")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

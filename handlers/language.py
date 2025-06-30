@@ -9,7 +9,7 @@ from database.repository import (
 from database.models import User
 from locales import get_text
 from utils.keyboards import (
-    create_language_keyboard, create_welcome_keyboard
+    create_language_keyboard, create_welcome_keyboard, seller_join_language_keyboard, buyer_join_language_keyboard
 )
 from config import Config
 
@@ -58,7 +58,43 @@ async def set_language(callback: CallbackQuery):
         reply_markup=create_welcome_keyboard(user_lang)
     )
 
-# поменять язык при присоединении
+# # поменять язык при присоединении
+# @router.callback_query(F.data == "join_and_change_language")
+# async def process_referral(callback: CallbackQuery):
+#     await callback.answer("Учи английский", show_alert=True)
+
+#присоединился ПРОДАВЕЦ
 @router.callback_query(F.data == "join_and_change_language")
-async def process_referral(callback: CallbackQuery):
-    await callback.answer("Учи английский", show_alert=True)
+async def process_language(callback: CallbackQuery):
+    user_lang = get_user_language(callback.from_user.id)
+
+    # Создаем медиа-объект с новым изображением и подписью
+    media = InputMediaPhoto(
+        media=FSInputFile("assets/join_language.png"),
+        caption=get_text('language_selection', user_lang)
+    )
+
+    # Изменяем медиа и подпись одним запросом
+    await callback.message.edit_media(
+        media=media,
+        reply_markup=seller_join_language_keyboard(user_lang)
+    )
+
+#присоединился ПОКУПАТЕЛЬ
+@router.callback_query(F.data.startswith("buyer_join_and_change_language_"))
+async def process_language(callback: CallbackQuery):
+    deal_id = callback.data.split("_")[-1]
+    user_lang = get_user_language(callback.from_user.id)
+
+    # Создаем медиа-объект с новым изображением и подписью
+    media = InputMediaPhoto(
+        media=FSInputFile("assets/join_language.png"),
+        caption=get_text('language_selection', user_lang)
+    )
+
+    # Изменяем медиа и подпись одним запросом
+    await callback.message.edit_media(
+        media=media,
+        reply_markup=buyer_join_language_keyboard(deal_id, user_lang)
+    )
+

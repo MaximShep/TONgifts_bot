@@ -69,7 +69,7 @@ class TonService:
                             refund_amount=amount / 10 ** 9,
                         )
                         await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
-                        update_deal_status(idshnik, "refunded_because_scam")
+                        update_deal_status(hex_id, "refunded_because_scam")
                         print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
                     else:
                         print('Платеж уже был возвращен')
