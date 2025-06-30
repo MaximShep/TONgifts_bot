@@ -346,7 +346,7 @@ async def cancel_deal(callback: CallbackQuery, state: FSMContext):
     user_lang = get_user_language(callback.from_user.id)
     await state.clear()
     await callback.answer(get_text('deal_canceled', user_lang))
-    await go_menu(callback.message, state)
+    await go_menu(callback)
 
 
 
