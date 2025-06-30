@@ -125,11 +125,13 @@ async def monitor_nft_transfer(callback: CallbackQuery, deal):
 
 async def finalize_deal(callback: CallbackQuery, deal):
     """Завершает сделку и переводит средства"""
+    buyer_lang = get_user_language(deal.buyer_id)  # Ваша функция получения языка
+    seller_lang = get_user_language(deal.seller_id)  # Ваша функция получения языка
     await callback.message.bot.send_message(
         chat_id=deal.buyer_id,
         text=f"✅ NFT получен! Сделка завершена\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
         parse_mode=ParseMode.MARKDOWN,
-        reply_markup=transfer_nft(create_back_to_menu_keyboard)
+        reply_markup=create_back_to_menu_keyboard(buyer_lang)
     )
 
     success = await ton_service.transfer_funds(deal.ton_address, deal.price, deal.id)
@@ -140,7 +142,7 @@ async def finalize_deal(callback: CallbackQuery, deal):
             chat_id=deal.seller_id,
             text=f"✅ Сделка завершена! Вам переведено {deal.price} TON\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
             parse_mode=ParseMode.MARKDOWN,
-            reply_markup=transfer_nft(create_back_to_menu_keyboard)
+            reply_markup=create_back_to_menu_keyboard(seller_lang)
         )
         await callback.message.bot.send_message(
             chat_id=-1002751170506,
