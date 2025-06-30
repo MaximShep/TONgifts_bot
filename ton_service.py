@@ -5,7 +5,7 @@ import logging
 import asyncio
 from pytoniq import WalletV3R2, LiteBalancer  # Можно заменить на WalletV3R1, WalletV3R2, WalletV4R1 WalletV4R2
 from tonsdk.utils import to_nano, Address
-from database.repository import update_address_buyer, check_refund_exists, create_refund
+from database.repository import update_address_buyer, check_refund_exists, create_refund, update_deal_status
 
 
 class TonService:
@@ -69,6 +69,7 @@ class TonService:
                             refund_amount=amount / 10 ** 9,
                         )
                         await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
+                        update_deal_status(idshnik, "refunded_because_scam")
                         print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
                     else:
                         print('Платеж уже был возвращен')
@@ -83,7 +84,6 @@ class TonService:
                 comment = in_msg.get("decoded_body", {}).get("text", "")
 
                 if not comment.strip() and amount == expected_amount:
-                    print(f"🚫 Обнаружен платеж без комментария от {buyer_address}")
                     if not check_refund_exists(idshnik):
                         create_refund(
                             deal_id=idshnik,
@@ -92,8 +92,6 @@ class TonService:
                         )
                         await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
                         print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
-                    else:
-                        print('Платеж уже был возвращен')
                     return False
 
             print("❌ Платеж не найден или сумма не совпадает")

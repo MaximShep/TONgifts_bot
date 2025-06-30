@@ -6,11 +6,13 @@ from aiogram.fsm.state import StatesGroup, State
 
 from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, \
     create_welcome_keyboard, create_deal_wallet_selection, deal_address_keyboard_seller, deal_link_keyboard_seller, \
-    create_language_keyboard, join_deal_wallet_selection, deal_address_keyboard_buyer
+    create_language_keyboard, join_deal_wallet_selection, deal_address_keyboard_buyer, close_keyboard, \
+    not_join_start_payment_keyboard
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, \
-    update_ton_address, add_user_wallet, set_active_wallet, get_user_language, update_user_language
+    update_ton_address, add_user_wallet, set_active_wallet, get_user_language, update_user_language, check_status, \
+    exit_deal, get_username
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
@@ -67,9 +69,8 @@ async def cmd_start(message: Message):
     )
     await message.answer_photo(
         photo=FSInputFile("assets/startCover.png"),  # Замените на вашу ссылку или file_id [[1]]
-        caption="Добро пожаловать в Mivelon Guarantor!\n\n"
-                "Этот бот обеспечивает безопасные сделки с NFT.\n"
-                "Нажмите кнопку ниже, чтобы создать сделку:",
+        caption=get_text('welcome_message', user_lang),
+        parse_mode=ParseMode.HTML,
         reply_markup=create_welcome_keyboard(user_lang)
     )
 
@@ -104,52 +105,23 @@ async def go_menu(callback: CallbackQuery):
     await callback.message.answer_photo(
         photo=FSInputFile("assets/menu.png"),
         caption=get_text('menu_message', user_lang),
+        parse_mode=ParseMode.HTML,
         reply_markup=create_welcome_keyboard(user_lang)
     )
+
+# Обработчик для callback-кнопки "Закрыть"
+@router.callback_query(F.data == "close")
+async def close_action(callback: CallbackQuery):
+    await callback.message.delete()  # Удаляем текущее сообщение
 
 #РАЗДЕЛ С РЕФЕРАЛАМИ
 @router.callback_query(F.data == "referral")
 async def process_referral(callback: CallbackQuery):
-    await callback.answer("Реферальная программа в разработке", show_alert=True)
+    user_id = callback.from_user.id  # Получаем ID из callback
+    user_lang = get_user_language(user_id)
+    await callback.answer(get_text('referral_program', user_lang), show_alert=True)
 
 
-#РАЗДЕЛ С ЯЗЫКАМИ
-@router.callback_query(F.data == "language")
-async def process_language(callback: CallbackQuery):
-    user_lang = get_user_language(callback.from_user.id)
-
-    # Создаем медиа-объект с новым изображением и подписью
-    media = InputMediaPhoto(
-        media=FSInputFile("assets/language.png"),
-        caption="🌏Выберите ЯЗЫК / Choose LANGUAGE"
-    )
-
-    # Изменяем медиа и подпись одним запросом
-    await callback.message.edit_media(
-        media=media,
-        reply_markup=create_language_keyboard(user_lang)
-    )
-@router.callback_query(F.data.startswith("lang_"))
-async def set_language(callback: CallbackQuery):
-    lang = callback.data.split("_")[1].lower()  # Приводим к нижнему регистру
-    if lang not in ['ru', 'en']:
-        await callback.answer("Недоступный язык", show_alert=True)
-        return
-
-    update_user_language(callback.from_user.id, lang)
-
-    # Перезагружаем пользователя из БД
-    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
-    user_lang = user.language if user else 'en'  # Язык по умолчанию
-    media = InputMediaPhoto(
-        media=FSInputFile("assets/menu.png"),
-        caption=get_text('menu_message', user_lang)
-    )
-    # Изменяем медиа и подпись одним запросом
-    await callback.message.edit_media(
-        media=media,
-        reply_markup=create_welcome_keyboard(user_lang)
-    )
 
 # СОЗДАНИЕ СДЕЛКИ
 
@@ -164,7 +136,7 @@ async def start_deal_creation(message: Message, state: FSMContext, callback: Cal
     )
     await message.answer_photo(
         photo=FSInputFile("assets/choose.png"),
-        caption="🧑‍💻Выберите <u><b>РОЛЬ</b></u> \n\n 🎁<b>Продавец</b> - владелец подарка в данный момент \n 💸<b>Покупатель</b> - тот, кто платит тоны \n\n <i>Для создания сделки нужна <u>ссылка на подарок</u>, можно сразу скопировать её в буфер обмена.</i>",
+        caption=get_text('role_selection', user_lang),
         parse_mode=ParseMode.HTML,
         reply_markup=create_role_keyboard(user_lang))
     # await state.set_state(SellerStates.wait_ton_address)
@@ -181,7 +153,7 @@ async def process_create_deal_callback(callback: CallbackQuery):
     user_lang = get_user_language(user_id)  # # Ваша функция получения языка
     await callback.message.answer_photo(
         photo=FSInputFile("assets/choose.png"),
-        caption="🧑‍💻Выберите <u><b>РОЛЬ</b></u> \n\n 🎁<b>Продавец</b> - владелец подарка в данный момент \n 💸<b>Покупатель</b> - тот, кто платит тоны \n\n <i>Для создания сделки нужна <u>ссылка на подарок</u>, можно сразу скопировать её в буфер обмена.</i>",
+        caption=get_text('role_selection', user_lang),
         parse_mode=ParseMode.HTML,
         reply_markup=create_role_keyboard(user_lang))
 
@@ -195,7 +167,7 @@ async def process_buyer_role(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()  # Удаляем сообщение
     await callback.message.answer_photo(
         photo=FSInputFile("assets/link.png"),
-        caption="🔗 Отправьте ссылку на подарок:",
+        caption=get_text('buyer_enter_gift_link', user_lang),
         reply_markup=deal_address_keyboard_buyer(user_lang)
     )
     await state.set_state(SellerStates.wait_gift_name)
@@ -210,13 +182,13 @@ async def process_seller_role(callback: CallbackQuery, state: FSMContext):
     user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
 
     text = (
-            "💼 <b>Выберите КОШЕЛЕК для сделки (на него придут ТОНы покупателя):</b>\n\n" +
-            "\n".join([
+        get_text('select_wallet', user_lang).format(
+            wallet_list="\n".join([
                 f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
                 for i, w in enumerate(wallets)
-            ]) +
-            ("\n😭Нет сохраненных кошельков" if not wallets else "") +
-            "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
+            ]),
+            no_wallets=get_text('no_saved_wallets', user_lang) if not wallets else ""
+        )
     )
 
     await callback.message.answer_photo(
@@ -232,18 +204,20 @@ async def process_seller_role(callback: CallbackQuery, state: FSMContext):
 async def select_deal_wallet(callback: CallbackQuery, state: FSMContext):
     wallet_idx = int(callback.data.split("_")[-1])
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     if wallet_idx < len(user.wallets):
         selected_wallet = user.wallets[wallet_idx]
         set_active_wallet(callback.from_user.id, selected_wallet)
-        await callback.answer(f"Выбран кошелек: {selected_wallet}")
+        await callback.answer(get_text('wallet_selected', user_lang).format(wallet=selected_wallet))
         await process_seller_role(callback, state)  # Обновляем интерфейс
 
 # --- Кнопка "Далее" ---
 @router.callback_query(SellerStates.select_wallet_deal, F.data == "proceed_wallet")
 async def proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     if not user or not user.active_wallet:
-        await callback.answer("⚠️ Сначала выберите кошелек!", show_alert=True)
+        await callback.answer(get_text('select_wallet_first', user_lang), show_alert=True)
         return
 
     await state.update_data(ton_address=user.active_wallet)
@@ -252,7 +226,7 @@ async def proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
     user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
     await callback.message.answer_photo(
         photo=FSInputFile("assets/link.png"),
-        caption=f"💳Выбранный TON-адрес:\n<code>{data["ton_address"]}</code>\n\n🔗 Отправьте ссылку на подарок:",
+        caption=get_text('selected_ton_address', user_lang).format(ton_address=data['ton_address']),
         parse_mode=ParseMode.HTML,
         reply_markup=deal_address_keyboard_seller(user_lang)
     )
@@ -268,14 +242,14 @@ async def process_new_deal_wallet(message: Message, state: FSMContext):
         wallets = user.wallets if user else []
         active_wallet = user.active_wallet if user else None
         text = (
-                "❗️НЕВЕРНЫЙ формат TON-адреса. <u><i>Попробуйте снова</i></u>❗️\n" +
-                "💼 <b>Выберите КОШЕЛЕК для сделки (на него придут ТОНы покупателя):</b>\n\n" +
-                "\n".join([
+            get_text('invalid_ton_address', user_lang).format(
+                wallet_list="\n".join([
                     f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
                     for i, w in enumerate(wallets)
-                ]) +
-                ("\n😭Нет сохраненных кошельков" if not wallets else "") +
-                "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
+                ]),
+                no_wallets=get_text('no_saved_wallets', user_lang) if not wallets else "",
+                enter_new=get_text('enter_new_or_select', user_lang)
+            )
         )
         await message.answer_photo(
             photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
@@ -292,7 +266,7 @@ async def process_new_deal_wallet(message: Message, state: FSMContext):
     data = await state.get_data()
     await message.answer_photo(
         photo=FSInputFile("assets/link.png"),
-        caption=f"💳Выбранный TON-адрес:\n<code>{data["ton_address"]}</code>\n\n🔗 Отправьте ссылку на подарок:",
+        caption=get_text('selected_ton_address', user_lang).format(ton_address=data['ton_address']),
         parse_mode=ParseMode.HTML,
         reply_markup=deal_address_keyboard_seller(user_lang)
     )
@@ -327,7 +301,7 @@ async def process_gift_name(message: Message, state: FSMContext):
 async def cancel_deal(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer(f"Сделка отменена")
-    await go_menu(callback.message, state)
+    await go_menu(callback)
 
 
 ###СОЗДАНИЕ СДЕЛКИ В БАЗЕ ДАННЫХ
@@ -395,7 +369,7 @@ async def process_price(message: Message, state: FSMContext):
         f"<b>Сделка создана! #{hex_id}</b>\n\n"
         f"🛍️ NFT для продажи: {deal.gift_name}\n\n"
         f"💰 Стоимость NFT: {deal.price} TON\n"
-        f"<i>(комиссию сервиса 5% оплачивает покупатель)</i>\n\n"
+        f"<i>(комиссию сервиса {Config.COMMISSION_PERCENT*100}% оплачивает покупатель)</i>\n\n"
         f"Поделитесь ссылкой со вторым участником сделки:\n{link}",
         parse_mode=ParseMode.HTML
     )
@@ -404,15 +378,20 @@ async def process_price(message: Message, state: FSMContext):
 async def _join_deal(message: Message, state: FSMContext, hex_id: str):
     deal = get_deal_by_hex(hex_id)
     if not deal:
+        user_lang = get_user_language(message.from_user.id)
         await message.answer_photo(
-            photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
-            caption="Сделка не найдена. Проверьте HEX-код.")
+            photo=FSInputFile("assets/error.png"),
+            caption=get_text('deal_not_found', user_lang)
+        )
         return
-    # Проверяем, не является ли пользователь уже участником сделки
+
+    # Проверяем, не является ли пользователь уже участником
     if deal.seller_id == message.from_user.id or deal.buyer_id == message.from_user.id:
+        user_lang = get_user_language(message.from_user.id)
         await message.answer_photo(
-            photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
-            caption="Вы уже являетесь участником этой сделки.")
+            photo=FSInputFile("assets/error.png"),
+            caption=get_text('already_participant', user_lang)
+        )
         return
 
     save_or_update_user(
@@ -427,124 +406,103 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         await state.update_data(gift_name=deal.gift_name)
         await state.update_data(comission_price=deal.comission_price)
         await state.update_data(buyer_id=deal.buyer_id)
-        await message.bot.send_photo(
-            chat_id=deal.buyer_id,
-            photo=FSInputFile("assets/hello.png"),
-            caption=f"Продавец @{message.from_user.username} присоединился к сделке!"
-        )
-        ##### ЗАПРАШИВАЕМ КОШЕЛЕК
+
         user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
         wallets = user.wallets if user else []
         active_wallet = user.active_wallet if user else None
-        user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
-        text = (
-                f"<b>🔗 Вы присоединились к сделке #{deal.id}</b>\n\n"+
-                f"🛍️ Вы продаете: {deal.gift_name}\n"+
-                f"💰 Стоимость NFT: {deal.price} TON\n"+
-                f"<i>(комиссию сервиса 5% оплачивает покупатель)👇</i>\n\n"+
-                "💼 <b>Для продолжения <u>Выберите КОШЕЛЕК</u> для сделки (на него придут ТОНы покупателя):</b>\n\n" +
-                "\n".join([
-                    f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
-                    for i, w in enumerate(wallets)
-                ]) +
-                ("\n😭Нет сохраненных кошельков" if not wallets else "") +
-                "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
+        user_lang = get_user_language(message.from_user.id)
+
+        # Отправляем уведомление покупателю
+        await message.bot.send_photo(
+            chat_id=deal.buyer_id,
+            photo=FSInputFile("assets/hello.png"),
+            caption=get_text('seller_joined', user_lang).format(username=message.from_user.username)
         )
 
+        # Генерируем список кошельков
+        wallet_list = "\n".join([
+            f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
+            for i, w in enumerate(wallets)
+        ])
+        no_wallets = get_text('no_saved_wallets', user_lang) if not wallets else ""
+        # Формируем текст
+        text =  get_text('join_deal_seller', user_lang).format(
+            deal_id=deal.id,
+            gift_name=deal.gift_name,
+            price=deal.comission_price,
+            percent=Config.COMMISSION_PERCENT * 100
+        )+ get_text('select_wallet_for_deal', user_lang).format(
+            wallet_list=wallet_list,
+            no_wallets=no_wallets
+        )
+
+        # Отправляем сообщение продавцу
         await message.answer_photo(
-            photo=FSInputFile("assets/hello.png"),  # Замените на вашу ссылку или file_id [[1]]
+            photo=FSInputFile("assets/hello.png"),
             caption=text,
             parse_mode=ParseMode.HTML,
-            reply_markup=join_deal_wallet_selection(wallets, active_wallet, user_lang)
+            reply_markup=join_deal_wallet_selection(wallets, active_wallet, deal.id, message.from_user.id, user_lang)
         )
         await state.set_state(SellerStates.wait_ton_address)
     else:
         update_deal_buyer(deal.id, buyer_id=message.from_user.id)
-        user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
-        # Уведомления
-        await message.answer_photo(
-            photo=FSInputFile("assets/hello.png"),  # Замените на вашу ссылку или file_id [[1]]
-            caption=
-            f"<b>🔗 Вы присоединились к сделке #{deal.id}</b>\n\n"
-            f"🛍️ Вы покупаете: {deal.gift_name}\n"
-            f"💰 Сумма к оплате: <b>{deal.comission_price} TON</b>\n\n"
-            f"<i>Комиссия сервиса составляет 5% от стоимости сделки (при сумме сделки менее 0.01 TON, комиссия составляет 0.01 TON)</i>",
-            parse_mode=ParseMode.HTML,
-            reply_markup=create_start_payment_keyboard(deal.id, user_lang)
+        user_lang = get_user_language(message.from_user.id)
+
+        # Генерируем текст для покупателя
+        text = get_text('join_deal_buyer', user_lang).format(
+            deal_id=deal.id,
+            gift_name=deal.gift_name,
+            price=deal.comission_price,
+            percent=Config.COMMISSION_PERCENT * 100
         )
+
+        # Отправляем сообщение покупателю
+        await message.answer_photo(
+            photo=FSInputFile("assets/hello.png"),
+            caption=text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=create_start_payment_keyboard(deal.id, message.from_user.id, user_lang)
+        )
+
+        # Отправляем уведомление продавцу
         await message.bot.send_photo(
             chat_id=deal.seller_id,
             photo=FSInputFile("assets/hello.png"),
-            caption=f"Покупатель @{message.from_user.username} присоединился к сделке!"
+            caption=get_text('buyer_joined', user_lang).format(username=message.from_user.username)
         )
-        await state.clear()  # Сброс состояния после присоединения [[6]]
-    # Запуск процесса оплаты
 
+        await state.clear()
 ### дополнительное состояние при переключении между кошельками при присоединении продавца
 async def deal_change_wallets_when_join(callback: CallbackQuery, state: FSMContext, hex_id: str):
     deal = get_deal_by_hex(hex_id)
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
     wallets = user.wallets if user else []
     active_wallet = user.active_wallet if user else None
-    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
+    user_lang = get_user_language(callback.from_user.id)
+
     text = (
-            f"<b>🔗 Вы присоединились к сделке #{deal.id}</b>\n\n"+
-            f"🛍️ Вы продаете: {deal.gift_name}\n"+
-            f"💰 Стоимость NFT: {deal.price} TON\n"+
-            f"<i>(комиссию сервиса 5% оплачивает покупатель)👇</i>\n\n"+
-            "💼 <b>Для продолжения <u>Выберите КОШЕЛЕК</u> для сделки (на него придут ТОНы покупателя):</b>\n\n" +
-            "\n".join([
-                f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
-                for i, w in enumerate(wallets)
-            ]) +
-            ("\n😭Нет сохраненных кошельков" if not wallets else "") +
-            "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
+            get_text('join_deal_seller', user_lang).format(
+                deal_id=deal.id,
+                gift_name=deal.gift_name,
+                price=deal.price,
+                percent=Config.COMMISSION_PERCENT * 100
+            ) +
+            get_text('select_wallet_for_deal', user_lang).format(
+                wallet_list="\n".join([
+                    f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
+                    for i, w in enumerate(wallets)
+                ]),
+                no_wallets=get_text('no_saved_wallets', user_lang) if not wallets else "",
+            )
     )
+
     await callback.message.answer_photo(
-        photo=FSInputFile("assets/hello.png"),  # Замените на вашу ссылку или file_id [[1]]
+        photo=FSInputFile("assets/hello.png"),
         caption=text,
         parse_mode=ParseMode.HTML,
-        reply_markup=join_deal_wallet_selection(wallets, active_wallet, user_lang)
+        reply_markup=join_deal_wallet_selection(wallets, active_wallet, deal.id, callback.from_user.id, user_lang)
     )
     await state.set_state(SellerStates.wait_ton_address)
-    # Запуск процесса оплаты
-
-# @router.message(SellerStates.wait_ton_address)
-# async def process_ton_address(message: Message, state: FSMContext):
-#     if not validate_ton_address(message.text):
-#         await message.answer_photo(
-#             photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
-#             caption="Неверный формат TON-адреса. Попробуйте снова:",
-#         )
-#         return
-#     # Добавляем кошелек и устанавливаем активным
-#     add_user_wallet(message.from_user.id, message.text)
-#     set_active_wallet(message.from_user.id, message.text)  # Новая строка
-#     await state.update_data(ton_address=message.text)
-#     data = await state.get_data()
-#     if data["id"] != "":
-#         update_ton_address(data["id"], data["ton_address"])
-#         await message.bot.send_message(
-#             chat_id=data["seller_id"],
-#             text=f"TON адрес принят! Ожидайте начала оплаты покупателем"
-#         )
-#         user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
-#         await message.bot.send_message(
-#             chat_id=data["buyer_id"],
-#             text=f"<b>🔗 Оплата по сделке #{data['id']}</b>\n"
-#                  f"🛍️ Вы покупаете: {data['gift_name']}\n"
-#                  f"💰 Сумма к оплате: <b>{data['comission_price']} TON</b>\n"
-#                  f"<i>Комиссия сервиса составляет 5% от стоимости сделки</i>",
-#             parse_mode=ParseMode.HTML,
-#             reply_markup=create_start_payment_keyboard(data["id"], user_lang)
-#         )
-#         await state.clear()
-#     else:
-#         await message.answer_photo(
-#             photo=FSInputFile("assets/link.png"),
-#             caption="🔗 Отправьте ссылку на подарок:",
-#         )
-#         await state.set_state(SellerStates.wait_gift_name)
 
 
 # --- Выбор активного кошелька по кнопке [1][2][3]---
@@ -554,99 +512,171 @@ async def join_select_deal_wallet(callback: CallbackQuery, state: FSMContext):
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
     data = await state.get_data()
     hex_id = data["id"]
+    user_lang = get_user_language(callback.from_user.id)
     if wallet_idx < len(user.wallets):
         selected_wallet = user.wallets[wallet_idx]
         set_active_wallet(callback.from_user.id, selected_wallet)
-        await callback.answer(f"Выбран кошелек: {selected_wallet}")
+        await callback.answer(get_text('wallet_selected', user_lang).format(wallet=selected_wallet))
         await deal_change_wallets_when_join(callback, state, hex_id)
+
 
 # --- Кнопка "Далее" ---
 @router.callback_query(SellerStates.wait_ton_address, F.data == "proceed_join_wallet")
 async def join_proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    user_lang = get_user_language(callback.from_user.id)
     if not user or not user.active_wallet:
-        await callback.answer("⚠️ Сначала выберите кошелек!", show_alert=True)
+        await callback.answer(get_text('select_wallet_first', user_lang), show_alert=True)
         return
+
     await state.update_data(ton_address=user.active_wallet)
-    await callback.message.delete()  # Удаляем сообщение
-    user_lang = get_user_language(callback.from_user.id)  # Ваша функция получения языка
+    await callback.message.delete()
+    user_lang = get_user_language(callback.from_user.id)
     data = await state.get_data()
+
     if data["id"] != "":
         update_ton_address(data["id"], data["ton_address"])
+
         await callback.message.bot.send_message(
             chat_id=data["seller_id"],
-            text=f"TON адрес принят! Ожидайте начала оплаты покупателем"
+            text=get_text('ton_address_accepted', user_lang)
         )
+
         await callback.message.bot.send_message(
             chat_id=data["buyer_id"],
-            text=f"<b>🔗 Оплата по сделке #{data['id']}</b>\n"
-                 f"🛍️ Вы покупаете: {data['gift_name']}\n"
-                 f"💰 Сумма к оплате: <b>{data['comission_price']} TON</b>\n"
-                 f"<i>Комиссия сервиса составляет 5% от стоимости сделки</i>",
+            text=get_text('payment_required', user_lang).format(
+                deal_id=data['id'],
+                gift_name=data['gift_name'],
+                price=data['comission_price'],
+                percent=Config.COMMISSION_PERCENT * 100
+            ),
             parse_mode=ParseMode.HTML,
-            reply_markup=create_start_payment_keyboard(data["id"], user_lang)
+            reply_markup=not_join_start_payment_keyboard(data["id"], user_lang)
         )
         await state.clear()
+
 
 # --- Ввод нового адреса РУЧНОЙ ---
 @router.message(SellerStates.wait_ton_address)
 async def join_process_new_deal_wallet(message: Message, state: FSMContext):
+    user_lang = get_user_language(message.from_user.id)
+    data = await state.get_data()
     if not validate_ton_address(message.text):
         telegram_id = message.from_user.id
-        user_lang = get_user_language(telegram_id)  # Ваша функция получения языка
-        user = session.query(User).filter_by(telegram_id=message.from_user.id, ).first()
+        user_lang = get_user_language(telegram_id)
+        user = session.query(User).filter_by(telegram_id=message.from_user.id).first()
         wallets = user.wallets if user else []
         active_wallet = user.active_wallet if user else None
+
         text = (
-                "❗️НЕВЕРНЫЙ формат TON-адреса. <u><i>Попробуйте снова</i></u>❗️\n" +
-                "💼 <b>Выберите КОШЕЛЕК для сделки (на него придут ТОНы покупателя):</b>\n\n" +
-                "\n".join([
+            get_text('invalid_ton_address', user_lang).format(
+                wallet_list="\n".join([
                     f"{i + 1}.<code>{w}</code> {'✅' if w == active_wallet else ''}"
                     for i, w in enumerate(wallets)
-                ]) +
-                ("\n😭Нет сохраненных кошельков" if not wallets else "") +
-                "\n\n🤝Можно <i><b>ввести новый адрес</b></i> или выбрать существующий"
+                ]),
+                no_wallets=get_text('no_saved_wallets', user_lang) if not wallets else "",
+            )
         )
         await message.answer_photo(
-            photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
+            photo=FSInputFile("assets/error.png"),
             caption=text,
             parse_mode=ParseMode.HTML,
-            reply_markup=join_deal_wallet_selection(wallets, active_wallet, user_lang)
+            reply_markup=join_deal_wallet_selection(wallets, active_wallet, data["id"], message.from_user.id, user_lang)
         )
         return
+
     add_user_wallet(message.from_user.id, message.text)
-    set_active_wallet(message.from_user.id, message.text)  # Новая строка
+    set_active_wallet(message.from_user.id, message.text)
+
     await state.update_data(ton_address=message.text)
-    data = await state.get_data()
+
     if data["id"] != "":
         update_ton_address(data["id"], data["ton_address"])
+
         await message.bot.send_message(
             chat_id=data["seller_id"],
-            text=f"TON адрес принят! Ожидайте начала оплаты покупателем"
+            text=get_text('ton_address_accepted', user_lang)
         )
-        user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
+
+        user_lang = get_user_language(message.from_user.id)
+
         await message.bot.send_message(
             chat_id=data["buyer_id"],
-            text=f"<b>🔗 Оплата по сделке #{data['id']}</b>\n"
-                 f"🛍️ Вы покупаете: {data['gift_name']}\n"
-                 f"💰 Сумма к оплате: <b>{data['comission_price']} TON</b>\n"
-                 f"<i>Комиссия сервиса составляет 5% от стоимости сделки</i>",
+            text=get_text('payment_required', user_lang).format(
+                deal_id=data['id'],
+                gift_name=data['gift_name'],
+                price=data['comission_price'],
+                percent=Config.COMMISSION_PERCENT * 100
+            ),
             parse_mode=ParseMode.HTML,
-            reply_markup=create_start_payment_keyboard(data["id"], user_lang)
+            reply_markup=not_join_start_payment_keyboard(data["id"], user_lang)
         )
         await state.clear()
 
-
-
 #ливнуть из сделки
-@router.callback_query(F.data == "leave_deal")
-async def process_referral(callback: CallbackQuery):
-    await callback.answer("Куда погнал", show_alert=True)
+@router.callback_query(F.data.startswith("leave_deal_"))
+async def leave(callback: CallbackQuery):
+    parts = callback.data.split("_")
+    deal_id = parts[-2]
+    user_id = int(parts[-1])
+    user_lang = get_user_language(user_id)
+    if check_status(deal_id):
+        chat_id = exit_deal(deal_id, user_id)
+        await callback.message.delete()
+        await callback.answer("Вы вышли из сделки", show_alert=True)
+        await callback.bot.send_message(
+            chat_id=chat_id,
+            text=get_text('leave_message', user_lang).format(
+                deal_id=deal_id,
+                username=get_username(user_id),
+            ),
+            parse_mode=ParseMode.HTML,
+            reply_markup=close_keyboard(user_lang)
+        )
+    else:
+        await callback.answer("Вы не можете выйти на этом этапе", show_alert=True)
 
-# поменять язык при присоединении
-@router.callback_query(F.data == "join_and_change_language")
-async def process_referral(callback: CallbackQuery):
-    await callback.answer("Учи английский", show_alert=True)
+
+
+
+# #РАЗДЕЛ С ЯЗЫКАМИ
+# @router.callback_query(F.data == "language")
+# async def process_language(callback: CallbackQuery):
+#     user_lang = get_user_language(callback.from_user.id)
+#
+#     # Создаем медиа-объект с новым изображением и подписью
+#     media = InputMediaPhoto(
+#         media=FSInputFile("assets/language.png"),
+#         caption=get_text('language_selection', user_lang)
+#     )
+#
+#     # Изменяем медиа и подпись одним запросом
+#     await callback.message.edit_media(
+#         media=media,
+#         reply_markup=create_language_keyboard(user_lang)
+#     )
+# @router.callback_query(F.data.startswith("lang_"))
+# async def set_language(callback: CallbackQuery):
+#     lang = callback.data.split("_")[1].lower()  # Приводим к нижнему регистру
+#     user_lang = get_user_language(callback.from_user.id)
+#     if lang not in ['ru', 'en']:
+#         await callback.answer(get_text('unknown_language', user_lang), show_alert=True)
+#         return
+#
+#     update_user_language(callback.from_user.id, lang)
+#
+#     # Перезагружаем пользователя из БД
+#     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+#     user_lang = user.language if user else 'en'  # Язык по умолчанию
+#     media = InputMediaPhoto(
+#         media=FSInputFile("assets/menu.png"),
+#         caption=get_text('menu_message', user_lang)
+#     )
+#     # Изменяем медиа и подпись одним запросом
+#     await callback.message.edit_media(
+#         media=media,
+#         reply_markup=create_welcome_keyboard(user_lang)
+#     )
 
 
 ######### КОПИРУЕМ

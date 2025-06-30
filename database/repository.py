@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Type
 
 from sqlalchemy import create_engine
@@ -161,3 +162,42 @@ def create_refund(
 
 def check_refund_exists( deal_id: str) -> bool:
     return session.query(Refund).filter(Refund.deal_id == deal_id).first() is not None
+
+def get_active_deals():
+    """Получает все сделки со статусом 'created' старше 1 часа"""
+    threshold = datetime.utcnow() - timedelta(hours=1)
+    return session.query(Deal).filter(
+        Deal.status == 'created',
+        Deal.date < threshold
+    ).all()
+
+def check_status(hex_id: str) -> bool:
+    """Проверяет статус сделки"""
+    deal = session.query(Deal).filter_by(id=hex_id).first()
+    if deal.status== 'created':
+        return True
+    else:
+        return False
+
+
+def exit_deal(hex_id, user_id: int) -> int | None:
+    """Выходит из сделки, удаляя user_id из seller_id или buyer_id, и возвращает id оставшегося участника."""
+    deal = session.query(Deal).filter_by(id=hex_id).first()
+
+    if not deal:
+        return None
+
+    remaining_id = None
+    if deal.seller_id == user_id:
+        remaining_id = deal.buyer_id
+        deal.seller_id = None
+    elif deal.buyer_id == user_id:
+        remaining_id = deal.seller_id
+        deal.buyer_id = None
+
+    session.commit()
+    return remaining_id
+
+def get_username(telegram_id: int) -> InstrumentedAttribute | None:
+    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+    return user.username

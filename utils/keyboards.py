@@ -1,4 +1,6 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+
+from config import Config
 from locales import get_text
 
 def create_role_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
@@ -35,16 +37,49 @@ def create_start_keyboard(user_lang: str = 'en') -> ReplyKeyboardMarkup:
         [KeyboardButton(text=get_text('create_deal', user_lang))]
     ], resize_keyboard=True)
 
-def create_payment_keyboard(deal_id: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
+def create_payment_keyboard(amount: int, comment: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=get_text('confirm_payment', user_lang), callback_data=f"confirm_payment_{deal_id}")]
+        [InlineKeyboardButton(text=get_text('tonkeep', user_lang), url=f"ton://transfer/{Config.ADMIN_TON_ADDRESS}?amount={amount}&text={comment}")],
+        [InlineKeyboardButton(text=get_text('support_button', user_lang), url="https://t.me/MivelonGuarantor_SupportBot")]
     ])
 
-def create_start_payment_keyboard(deal_id: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=get_text('start_payment', user_lang), callback_data=f"start_payment_{deal_id}")]
-    ])
+def create_start_payment_keyboard(deal_id: str, user_id: int, user_lang: str = 'en') -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=get_text('leave_button', user_lang),
+                callback_data=f"leave_deal_{deal_id}_{user_id}"  # Используем разделитель :
+            ),
+            InlineKeyboardButton(
+                text=get_text('language_button', user_lang),
+                callback_data="buyer_join_and_change_language"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=get_text('start_payment', user_lang),
+                callback_data=f"start_payment_{deal_id}"
+            )
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
+def not_join_start_payment_keyboard(deal_id: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
+    buttons = [
+        [
+            InlineKeyboardButton(
+                text=get_text('language_button', user_lang),
+                callback_data="buyer_join_and_change_language"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                text=get_text('start_payment', user_lang),
+                callback_data=f"start_payment_{deal_id}"
+            )
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 def create_wallets_keyboard(wallets: list, active_wallet: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
     buttons = []
     wallet_row = [
@@ -141,7 +176,7 @@ def create_language_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
     buttons.append([InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="back_to_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-def join_deal_wallet_selection(wallets: list, active_wallet: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
+def join_deal_wallet_selection(wallets: list, active_wallet: str, deal_id:str, user_id:int, user_lang: str = 'en') -> InlineKeyboardMarkup:
     buttons = []
     wallet_row = [
         InlineKeyboardButton(text=f"{i + 1}✅" if w == active_wallet else f"{i + 1}", callback_data=f"choose_when_join_wallet_{i}")
@@ -153,7 +188,18 @@ def join_deal_wallet_selection(wallets: list, active_wallet: str, user_lang: str
             InlineKeyboardButton(text=get_text('language_button', user_lang), callback_data="join_and_change_language"),
             InlineKeyboardButton(text=get_text('support_button', user_lang), url="https://t.me/MivelonGuarantor_SupportBot ")
         ],
-        [InlineKeyboardButton(text=get_text('leave_button', user_lang), callback_data="leave_deal")],
+        [InlineKeyboardButton(text=get_text('leave_button', user_lang), callback_data=f"leave_deal_{deal_id}_{user_id}" )],
         [InlineKeyboardButton(text=get_text('proceed_button', user_lang), callback_data="proceed_join_wallet")]
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def created_deal_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=get_text('cancel_deal', user_lang), callback_data="created_deal_cancel")],
+        [InlineKeyboardButton(text=get_text('support_button', user_lang), url="https://t.me/MivelonGuarantor_SupportBot")]
+    ])
+
+def close_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=get_text('close_button', user_lang), callback_data="close")]
+    ])

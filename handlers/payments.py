@@ -5,8 +5,8 @@ from aiogram.enums import ParseMode
 
 from handlers.deals import BuyerStates
 from ton_service import TonService
-from database.repository import update_deal_status, get_deal_by_id
-from utils.keyboards import create_payment_keyboard  # Если нужна клавиатура для других действий
+from database.repository import update_deal_status, get_deal_by_id, get_user_language
+from utils.keyboards import create_payment_keyboard, close_keyboard  # Если нужна клавиатура для других действий
 from config import Config
 from utils.nft_checker import check_nft_owner
 import asyncio
@@ -23,24 +23,27 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
     if not deal:
         await callback.answer("Сделка не найдена!")
         return
-
+    telegram_id = callback.from_user.id
+    user_lang = get_user_language(telegram_id)  # Ваша функция получения языка
     amount = deal.comission_price
     comment = f"DEAL_{deal.id}"
-
+    update_deal_status(deal.id, "start_payment")
     await callback.message.answer(
         f"💰 Переведите *{amount}* TON на адрес:\n"
         f"`{Config.ADMIN_TON_ADDRESS}`\n\n"
         f"⚠️ Обязательно введите комментарий: `{comment}`",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=create_payment_keyboard(int(amount*10**9), comment, user_lang)
     )
 
     # Запускаем автоматическую проверку платежа
     asyncio.create_task(automatic_payment_monitor(callback, deal))
-
+    seller_lang = get_user_language(deal.seller_id)  # Ваша функция получения языка
     # Уведомляем продавца
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
-        text="Покупатель начал оплату. Ожидайте подтверждения."
+        text="Покупатель начал оплату. Ожидайте подтверждения.",
+        reply_markup = close_keyboard(seller_lang)
     )
 
 
@@ -57,17 +60,21 @@ async def automatic_payment_monitor(callback: CallbackQuery, deal):
             await process_payment(callback, deal)
             return
         await asyncio.sleep(interval)
+    buyer_lang = get_user_language(deal.buyer_id)  # Ваша функция получения языка
+    seller_lang = get_user_language(deal.seller_id)  # Ваша функция получения языка
 
     # Если время истекло
     await callback.message.bot.send_message(
         chat_id=deal.buyer_id,
         text=f"❌ Время ожидания платежа истекло. Сделка отменена.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=close_keyboard(buyer_lang)
     )
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
         text=f"❌ Время ожидания платежа истекло. Сделка отменена.",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=close_keyboard(seller_lang)
     )
     update_deal_status(deal.id, "canceled")
 
