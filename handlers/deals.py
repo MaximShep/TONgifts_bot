@@ -12,7 +12,7 @@ from utils.validators import validate_ton_address, validate_price, validate_tg_n
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, \
     update_ton_address, add_user_wallet, set_active_wallet, get_user_language, update_user_language, check_status, \
-    exit_deal, get_username
+    exit_deal, get_username, is_new_user
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
@@ -63,10 +63,23 @@ async def cmd_start(message: Message):
     Приветственное сообщение с кнопкой [[1]]
     """
     user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
-    save_or_update_user(
-        telegram_id=message.from_user.id,
-        username=message.from_user.username
-    )
+
+    if is_new_user(telegram_id=message.from_user.id):
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username)
+        await message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
+            message_thread_id = 25,
+            parse_mode=ParseMode.HTML
+        )
+    else:
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username
+        )
+
     await message.answer_photo(
         photo=FSInputFile("assets/startCover.png"),  # Замените на вашу ссылку или file_id [[1]]
         caption=get_text('welcome_message', user_lang),
@@ -82,10 +95,23 @@ async def cmd_start(message: Message):
 async def menu_text(message: Message):
     user_id = message.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)
-    save_or_update_user(
-        telegram_id=message.from_user.id,
-        username=message.from_user.username
-    )
+
+    if is_new_user(telegram_id=message.from_user.id):
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username)
+        await message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
+            message_thread_id = 25,
+            parse_mode=ParseMode.HTML
+        )
+    else:
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username
+        )
+
     await message.answer_photo(
         photo=FSInputFile("assets/menu.png"),
         caption=get_text('menu_message', user_lang),
@@ -127,13 +153,26 @@ async def process_referral(callback: CallbackQuery):
 
 ### создание сделки ПО КОМАНДЕ
 @router.message(F.text.in_({"/create_deal", "Сделка"}))
-async def start_deal_creation(message: Message, state: FSMContext, callback: CallbackQuery):
+async def start_deal_creation(message: Message, state: FSMContext):
     telegram_id = message.from_user.id
     user_lang = get_user_language(telegram_id)  # # Ваша функция получения языка
-    save_or_update_user(
-        telegram_id=telegram_id,
-        username=message.from_user.username
-    )
+
+    if is_new_user(telegram_id=message.from_user.id):
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username)
+        await message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
+            message_thread_id = 25,
+            parse_mode=ParseMode.HTML
+        )
+    else:
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username
+        )
+
     await message.answer_photo(
         photo=FSInputFile("assets/choose.png"),
         caption=get_text('role_selection', user_lang),
@@ -279,29 +318,38 @@ async def process_new_deal_wallet(message: Message, state: FSMContext):
 ######   Обработка ввода ССЫЛКИ на подарок и начало ввода ЦЕНЫ (процесс ОДИНАКОВЫЙ для ОБЕИХ ролей)
 @router.message(SellerStates.wait_gift_name)
 async def process_gift_name(message: Message, state: FSMContext):
-    user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
+    user_lang = get_user_language(message.from_user.id)
+
     if not validate_tg_nft_link(message.text):
         await message.answer_photo(
-        photo=FSInputFile("assets/error.png"),  # Замените на вашу ссылку или file_id [[1]]
-        caption="Неверный формат ссылки. Попробуйте снова:",
-        reply_markup = deal_address_keyboard_seller(user_lang))
+            photo=FSInputFile("assets/error.png"),
+            caption=get_text('invalid_gift_link', user_lang),
+            parse_mode=ParseMode.HTML,
+            reply_markup=deal_address_keyboard_seller(user_lang)
+        )
         return
+
     await state.update_data(gift_name=message.text)
+
     await message.answer_photo(
         photo=FSInputFile("assets/howMuch.png"),
-        caption="💵 Введите цену подарка в TON (в формате 0.01):",
+        caption=get_text('enter_price', user_lang),
+        parse_mode=ParseMode.HTML,
         reply_markup=deal_link_keyboard_seller(user_lang)
     )
     await state.set_state(SellerStates.wait_price)
 
 
-
 ### ОТМЕНА создания сделки
 @router.callback_query(F.data == "cancel_deal")
 async def cancel_deal(callback: CallbackQuery, state: FSMContext):
+    user_lang = get_user_language(callback.from_user.id)
     await state.clear()
-    await callback.answer(f"Сделка отменена")
-    await go_menu(callback)
+    await callback.answer(get_text('deal_canceled', user_lang))
+    await go_menu(callback.message, state)
+
+
+
 
 
 ###СОЗДАНИЕ СДЕЛКИ В БАЗЕ ДАННЫХ
@@ -311,7 +359,7 @@ async def process_price(message: Message, state: FSMContext):
     if not validate_price(message.text):
         await message.answer_photo(
         photo=FSInputFile("assets/howMuch.png"),
-        caption="ЦЕНА должна быть числом БОЛЬШЕ 0. \n<i>Для десятичного значения используйте '.'</i>\n\nПопробуйте снова:",
+        caption=get_text('price_must_be_number', user_lang),
         reply_markup=deal_link_keyboard_seller(user_lang))
         return
     data = await state.get_data()
@@ -365,12 +413,15 @@ async def process_price(message: Message, state: FSMContext):
     await state.clear()  # Сброс состояния после присоединения [[6]]
     link = f"https://t.me/{Config.BOT_USERNAME}?start={hex_id}"
     deal = get_deal_by_hex(hex_id)
+    text = get_text("deal_created", user_lang).format(
+        hex_id=hex_id,
+        gift_name=deal.gift_name,
+        price=deal.price,
+        percent=Config.COMMISSION_PERCENT*100,
+        link=link,
+    )
     await message.answer(
-        f"<b>Сделка создана! #{hex_id}</b>\n\n"
-        f"🛍️ NFT для продажи: {deal.gift_name}\n\n"
-        f"💰 Стоимость NFT: {deal.price} TON\n"
-        f"<i>(комиссию сервиса {Config.COMMISSION_PERCENT*100}% оплачивает покупатель)</i>\n\n"
-        f"Поделитесь ссылкой со вторым участником сделки:\n{link}",
+        text=text,
         parse_mode=ParseMode.HTML
     )
 
@@ -394,10 +445,23 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         )
         return
 
-    save_or_update_user(
-        telegram_id=message.from_user.id,
-        username=message.from_user.username
-    )
+
+    if is_new_user(telegram_id=message.from_user.id):
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username)
+        await message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
+            message_thread_id = 25,
+            parse_mode=ParseMode.HTML
+        )
+    else:
+        save_or_update_user(
+            telegram_id=message.from_user.id,
+            username=message.from_user.username
+        )
+
 
     if not deal.seller_id:
         update_deal_seller(deal.id, seller_id=message.from_user.id)
@@ -617,9 +681,10 @@ async def join_proceed_deal_wallet(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     user_lang = get_user_language(callback.from_user.id)
     data = await state.get_data()
+    ton_address = user.active_wallet
 
     if data["id"] != "":
-        update_ton_address(data["id"], data["ton_address"])
+        update_ton_address(data["id"], ton_address)
 
         await callback.message.bot.send_message(
             chat_id=data["seller_id"],
@@ -673,9 +738,10 @@ async def join_process_new_deal_wallet(message: Message, state: FSMContext):
     set_active_wallet(message.from_user.id, message.text)
 
     await state.update_data(ton_address=message.text)
+    ton_address = message.text
 
     if data["id"] != "":
-        update_ton_address(data["id"], data["ton_address"])
+        update_ton_address(data["id"], ton_address)
 
         await message.bot.send_message(
             chat_id=data["seller_id"],
@@ -707,7 +773,7 @@ async def leave(callback: CallbackQuery):
     if check_status(deal_id):
         chat_id = exit_deal(deal_id, user_id)
         await callback.message.delete()
-        await callback.answer("Вы вышли из сделки", show_alert=True)
+        await callback.answer(get_text("you_leave", user_lang), show_alert=True)
         await callback.bot.send_message(
             chat_id=chat_id,
             text=get_text('leave_message', user_lang).format(
@@ -718,7 +784,7 @@ async def leave(callback: CallbackQuery):
             reply_markup=close_keyboard(user_lang)
         )
     else:
-        await callback.answer("Вы не можете выйти на этом этапе", show_alert=True)
+        await callback.answer(get_text("not_leave", user_lang), show_alert=True)
 
 
 

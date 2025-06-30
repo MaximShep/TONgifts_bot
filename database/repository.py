@@ -201,3 +201,13 @@ def exit_deal(hex_id, user_id: int) -> int | None:
 def get_username(telegram_id: int) -> InstrumentedAttribute | None:
     user = session.query(User).filter_by(telegram_id=telegram_id).first()
     return user.username
+
+
+def is_new_user(telegram_id: int):
+    with Session() as session:
+        user = session.query(User).filter_by(telegram_id=telegram_id).first()
+        if not user:
+            return True
+        else:
+            return False
+    session.commit()

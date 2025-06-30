@@ -65,15 +65,10 @@ def create_start_payment_keyboard(deal_id: str, user_id: int, user_lang: str = '
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def not_join_start_payment_keyboard(deal_id: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
-    buttons = [
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=get_text('start_payment', user_lang),callback_data=f"start_payment_{deal_id}")]
+    ])
 
-            InlineKeyboardButton(
-                text=get_text('start_payment', user_lang),
-                callback_data=f"start_payment_{deal_id}"
-            )
-
-    ]
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
 def create_wallets_keyboard(wallets: list, active_wallet: str, user_lang: str = 'en') -> InlineKeyboardMarkup:
     buttons = []
     wallet_row = [
@@ -214,3 +209,8 @@ def buyer_join_language_keyboard(deal_id: str,user_lang: str = 'en') -> InlineKe
         InlineKeyboardButton(text=get_text('english', user_lang), callback_data=f"buyer_join_lang_en_{deal_id}")
     ])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+def transfer_nft(username:str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"@{username}", url="https://t.me/{username}")]
+    ])

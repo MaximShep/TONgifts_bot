@@ -1,4 +1,6 @@
 # locales.py
+from config import Config
+
 LEXICON = {
     "RU": {
         "role_seller": "🎁 Продавец",
@@ -82,8 +84,21 @@ LEXICON = {
         "unknown_language": "🤔Недоступный язык",
         "buyer_enter_gift_link": "🔗 Отправьте ссылку на подарок:",
         "deal_time_out":"Сделка #{deal_id} отменена автоматически из-за отсутствия активности",
-        "leave_message":"@{username} покинул сделку #{deal_id}"
-
+        "leave_message":"@{username} покинул сделку #{deal_id}",
+        "invalid_gift_link": "Неверный формат ссылки. Попробуйте снова:",
+        "enter_price": "💵 Введите цену подарка в TON (в формате 0.01):",
+        "deal_canceled": "❌ Сделка отменена",
+        "price_must_be_number": "ЦЕНА должна быть числом БОЛЬШЕ 0. \n<i>Для десятичного значения используйте '.'</i>\n\nПопробуйте снова:",
+        "you_leave":"Вы вышли из сделки",
+        "not_leave":"Вы не можете выйти на этом этапе",
+        "deal_not_found": "Сделка не найдена!",
+        "send_ton_payment": (
+            "💰 Переведите *{amount}* TON на адрес:\n"
+            f"`{Config.ADMIN_TON_ADDRESS}`\n\n"
+            "⚠️ Обязательно введите комментарий: `{comment}`"
+        ),
+        "payment_started_notification": "Покупатель начал оплату. Ожидайте подтверждения.",
+        "payment_timeout": "⏰ Срок оплаты истёк. Сделка отменена.",
         # ... остальные ключи
     },
     "EN": {
@@ -171,8 +186,21 @@ LEXICON = {
         "unknown_language": "🤔Unknown language",
         "buyer_enter_gift_link": "🔗 Enter the link to the gift:",
         "deal_time_out": "The deal #{deal_id} was canceled automatically due to lack of activity",
-        "leave_message": "@{username} leave the deal #{deal_id}"
-
+        "leave_message": "@{username} leave the deal #{deal_id}",
+        "invalid_gift_link": "Invalid gift link format. Try again:",
+        "enter_price": "💵 Enter gift price in TON (format 0.01):",
+        "deal_canceled": "❌ Deal canceled",
+        "price_must_be_number": "PRICE must be a number GREATER THAN 0.\nUse '.' for decimal values\n\nTry again:",
+        "you_leave":"You left the deal",
+        "not_leave":"You can't leave the deal on this step",
+        "deal_not_found": "Deal not found!",
+        "send_ton_payment": (
+            "💰 Send *{amount}* TON to address:\n"
+            f"`{Config.ADMIN_TON_ADDRESS}`\n\n"
+            "⚠️ Enter comment: `{comment}`"
+        ),
+        "payment_started_notification": "Buyer started payment. Waiting for confirmation.",
+        "payment_timeout": "⏰ Payment timeout. Deal canceled.",
         # ... остальные ключи
     }
 }

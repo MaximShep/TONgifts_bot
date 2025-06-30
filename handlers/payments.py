@@ -4,9 +4,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.enums import ParseMode
 
 from handlers.deals import BuyerStates
+from locales import get_text
 from ton_service import TonService
-from database.repository import update_deal_status, get_deal_by_id, get_user_language
-from utils.keyboards import create_payment_keyboard, close_keyboard  # Если нужна клавиатура для других действий
+from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username
+from utils.keyboards import create_payment_keyboard, close_keyboard, \
+    transfer_nft, create_back_to_menu_keyboard  # Если нужна клавиатура для других действий
 from config import Config
 from utils.nft_checker import check_nft_owner
 import asyncio
@@ -19,31 +21,38 @@ ton_service = TonService()
 async def start_payment(callback: CallbackQuery, state: FSMContext):
     deal_id = callback.data.split("_")[2]
     deal = get_deal_by_id(deal_id)
-
+    user_lang = get_user_language(callback.from_user.id)
     if not deal:
-        await callback.answer("Сделка не найдена!")
+        await callback.answer(get_text('deal_not_found', user_lang))
         return
+
     telegram_id = callback.from_user.id
-    user_lang = get_user_language(telegram_id)  # Ваша функция получения языка
+    user_lang = get_user_language(telegram_id)
+
     amount = deal.comission_price
     comment = f"DEAL_{deal.id}"
     update_deal_status(deal.id, "start_payment")
+
     await callback.message.answer(
-        f"💰 Переведите *{amount}* TON на адрес:\n"
-        f"`{Config.ADMIN_TON_ADDRESS}`\n\n"
-        f"⚠️ Обязательно введите комментарий: `{comment}`",
+        get_text('send_ton_payment', user_lang).format(
+            amount=amount,
+            ton_address=Config.ADMIN_TON_ADDRESS,
+            comment=comment
+        ),
         parse_mode=ParseMode.MARKDOWN,
-        reply_markup=create_payment_keyboard(int(amount*10**9), comment, user_lang)
+        reply_markup=create_payment_keyboard(int(amount * 10 ** 9), comment, user_lang)
     )
 
-    # Запускаем автоматическую проверку платежа
+    # Запуск автоматической проверки платежа
     asyncio.create_task(automatic_payment_monitor(callback, deal))
-    seller_lang = get_user_language(deal.seller_id)  # Ваша функция получения языка
-    # Уведомляем продавца
+
+    seller_lang = get_user_language(deal.seller_id)
+
+    # Уведомление продавца
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
-        text="Покупатель начал оплату. Ожидайте подтверждения.",
-        reply_markup = close_keyboard(seller_lang)
+        text=get_text('payment_started_notification', seller_lang),
+        reply_markup=close_keyboard(seller_lang)
     )
 
 
@@ -66,13 +75,13 @@ async def automatic_payment_monitor(callback: CallbackQuery, deal):
     # Если время истекло
     await callback.message.bot.send_message(
         chat_id=deal.buyer_id,
-        text=f"❌ Время ожидания платежа истекло. Сделка отменена.",
+        text=get_text('payment_timeout', buyer_lang),
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=close_keyboard(buyer_lang)
     )
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
-        text=f"❌ Время ожидания платежа истекло. Сделка отменена.",
+        text=get_text('payment_timeout', seller_lang),
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=close_keyboard(seller_lang)
     )
@@ -82,10 +91,12 @@ async def automatic_payment_monitor(callback: CallbackQuery, deal):
 async def process_payment(callback: CallbackQuery, deal):
     """Обрабатывает успешную оплату"""
     update_deal_status(deal.id, "payment_received")
+    username = get_username(deal.buyer_id)
     await callback.message.answer("✅ Оплата подтверждена! Ожидайте передачи подарка...")
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
-        text="🎁 Оплата получена. Передайте NFT покупателю."
+        text="🎁 Оплата получена. Передайте NFT покупателю.",
+        reply_markup=transfer_nft(username)
     )
 
     # Начинаем проверку передачи NFT
@@ -117,7 +128,8 @@ async def finalize_deal(callback: CallbackQuery, deal):
     await callback.message.bot.send_message(
         chat_id=deal.buyer_id,
         text=f"✅ NFT получен! Сделка завершена\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=transfer_nft(create_back_to_menu_keyboard)
     )
 
     success = await ton_service.transfer_funds(deal.ton_address, deal.price, deal.id)
@@ -127,8 +139,21 @@ async def finalize_deal(callback: CallbackQuery, deal):
         await callback.message.bot.send_message(
             chat_id=deal.seller_id,
             text=f"✅ Сделка завершена! Вам переведено {deal.price} TON\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
-            parse_mode=ParseMode.MARKDOWN
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=transfer_nft(create_back_to_menu_keyboard)
         )
+        await callback.message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Сделка #{deal.id} завершена!</b>\n\n"
+                 f"🛍️ NFT: {deal.gift_name}\n"
+                 f"💰 Цена (без комиссии): {deal.price} TON\n\n"
+                 f"Продавец: @{get_username(deal.seller_id)} [{deal.seller_id}]\n"
+                 f"Покупатель: @{get_username(deal.buyer_id)} [{deal.buyer_id}]\n\n"
+                 f"<b>💰 Сумма сделки (c скомиссией): {deal.comission_price} TON</b>",
+            message_thread_id=4,
+            parse_mode=ParseMode.HTML
+        )
+
     else:
         await callback.message.bot.send_message(
             chat_id=deal.seller_id,
