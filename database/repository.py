@@ -64,6 +64,10 @@ def get_deal_by_hex(hex_id: str) -> Type[Deal] | None:
     """Получает сделку по HEX-идентификатору [[3]]"""
     return session.query(Deal).filter_by(id=hex_id).first()  # Теперь возвращает объект Deal
 
+def get_user_by_id(id_u: int):
+    """Получает сделку по HEX-идентификатору [[3]]"""
+    return session.query(User).filter_by(telegram_id=id_u).first()
+
 def get_deal_by_id(new_id: str) -> Type[Deal] | None:
     """Получает сделку по HEX-идентификатору [[3]]"""
     return session.query(Deal).filter_by(id=new_id).first()  # Теперь возвращает объект Deal

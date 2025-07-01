@@ -12,7 +12,7 @@ from utils.validators import validate_ton_address, validate_price, validate_tg_n
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, \
     update_ton_address, add_user_wallet, set_active_wallet, get_user_language, update_user_language, check_status, \
-    exit_deal, get_username, is_new_user
+    exit_deal, get_username, is_new_user, get_user_by_id, get_userbuyer_deals, get_userseller_deals
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
@@ -68,11 +68,16 @@ async def cmd_start(message: Message):
         save_or_update_user(
             telegram_id=message.from_user.id,
             username=message.from_user.username)
+
+        keyboard_admin_users = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_user_{message.from_user.id}")]
+        ])
         await message.bot.send_message(
             chat_id=-1002751170506,
             text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
             message_thread_id = 25,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard_admin_users
         )
     else:
         save_or_update_user(
@@ -100,11 +105,16 @@ async def menu_text(message: Message):
         save_or_update_user(
             telegram_id=message.from_user.id,
             username=message.from_user.username)
+
+        keyboard_admin_users = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_user_{message.from_user.id}")]
+        ])
         await message.bot.send_message(
             chat_id=-1002751170506,
             text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
             message_thread_id = 25,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard_admin_users
         )
     else:
         save_or_update_user(
@@ -161,11 +171,16 @@ async def start_deal_creation(message: Message, state: FSMContext):
         save_or_update_user(
             telegram_id=message.from_user.id,
             username=message.from_user.username)
+
+        keyboard_admin_users = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_user_{message.from_user.id}")]
+        ])
         await message.bot.send_message(
             chat_id=-1002751170506,
             text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
             message_thread_id = 25,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard_admin_users
         )
     else:
         save_or_update_user(
@@ -425,7 +440,7 @@ async def process_price(message: Message, state: FSMContext):
         text=text,
         parse_mode=ParseMode.HTML
     )
-    keyboard_admin = InlineKeyboardMarkup(inline_keyboard=[
+    keyboard_admin_deals = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_deal_{deal.id}")]
     ])
     await message.bot.send_message(
@@ -439,7 +454,7 @@ async def process_price(message: Message, state: FSMContext):
             f"<b>💰 Сумма сделки (c комиссией): {deal.comission_price} TON</b>",
         message_thread_id=35,
         parse_mode=ParseMode.HTML,
-        reply_markup=keyboard_admin
+        reply_markup=keyboard_admin_deals
     )
     @router.callback_query(F.data.startswith("refresh_deal_"))
     async def refresh_deal_handler(callback: CallbackQuery):
@@ -496,11 +511,15 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         save_or_update_user(
             telegram_id=message.from_user.id,
             username=message.from_user.username)
+        keyboard_admin_users = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_user_{message.from_user.id}")]
+        ])
         await message.bot.send_message(
             chat_id=-1002751170506,
             text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
             message_thread_id = 25,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard_admin_users
         )
     else:
         save_or_update_user(
@@ -832,7 +851,29 @@ async def leave(callback: CallbackQuery):
     else:
         await callback.answer(get_text("not_leave", user_lang), show_alert=True)
 
+#Для чата админов
+@router.callback_query(F.data.startswith("refresh_user_"))
+async def refresh_deal_handler(callback: CallbackQuery):
+    user_id = int(callback.data.split("_")[-1])
+    user =  get_user_by_id(user_id)
+    updated_text = (
+        f"<b>Пользователь @{user.username} [{user.telegram_id}]</b>\n\n"
+        f"Сделок в роли продавца: {len(get_userbuyer_deals(user_id))}\n"
+        f"Сделок в роли покупателя: {len(get_userseller_deals(user_id))}\n\n"
+        f"<b>Всего сделок {len(get_userbuyer_deals(user_id)) + len(get_userseller_deals(user_id))}</b>\n"
+        f"Активный кошелек: {user.active_wallet if user.active_wallet else '-'}\n\n"
+        f"<i>Дата регистрации: {user.created_at}</i>\n"
+        f"<i>Последняя активность: {user.last_activity}</i>"
+    )
 
+    # Редактируем сообщение
+    await callback.message.edit_text(
+        text=updated_text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=callback.message.reply_markup  # Оставляем кнопку
+    )
+
+    await callback.answer()
 
 
 # #РАЗДЕЛ С ЯЗЫКАМИ
