@@ -171,6 +171,16 @@ def get_active_deals():
         Deal.date < threshold
     ).all()
 
+def get_userbuyer_deals(telegram_id: int):
+    return session.query(Deal).filter(
+        Deal.buyer_id == telegram_id,
+    ).all()
+
+def get_userseller_deals(telegram_id: int):
+    return session.query(Deal).filter(
+        Deal.seller_id == telegram_id,
+    ).all()
+
 def check_status(hex_id: str) -> bool:
     """Проверяет статус сделки"""
     deal = session.query(Deal).filter_by(id=hex_id).first()

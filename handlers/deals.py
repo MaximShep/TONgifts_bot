@@ -378,6 +378,7 @@ async def process_price(message: Message, state: FSMContext):
                 price=float(message.text),
                 comission_price = round(float(message.text) + 0.01, 6)
             )
+
         else:
             deal_id = save_deal(
                 sdelka_id=hex_id,
@@ -424,6 +425,51 @@ async def process_price(message: Message, state: FSMContext):
         text=text,
         parse_mode=ParseMode.HTML
     )
+    keyboard_admin = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_deal_{deal.id}")]
+    ])
+    await message.bot.send_message(
+        chat_id=-1002751170506,
+        text=f"<b>Сделка #{deal.id}</b>\n\n"
+            f"Статус: {deal.status}\n\n"
+            f"🛍️ NFT: {deal.gift_name}\n"
+            f"💰 Цена (без комиссии): {deal.price} TON\n\n"
+            f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
+            f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"
+            f"<b>💰 Сумма сделки (c комиссией): {deal.comission_price} TON</b>",
+        message_thread_id=35,
+        parse_mode=ParseMode.HTML,
+        reply_markup=keyboard_admin
+    )
+    @router.callback_query(F.data.startswith("refresh_deal_"))
+    async def refresh_deal_handler(callback: CallbackQuery):
+        deal_id = callback.data.split("_")[-1]
+
+        # Получаем актуальные данные сделки из БД или другого источника
+        deal = get_deal_by_hex(deal_id)  # <-- тут должна быть ваша функция получения сделки
+
+        if not deal:
+            await callback.answer("Сделка не найдена")
+            return
+
+        updated_text = (
+            f"<b>Сделка #{deal.id}</b>\n\n"
+            f"Статус: {deal.status}\n\n"
+            f"🛍️ NFT: {deal.gift_name}\n"
+            f"💰 Цена (без комиссии): {deal.price} TON\n\n"
+            f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
+            f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"
+            f"<b>💰 Сумма сделки (c комиссией): {deal.comission_price} TON</b>"
+        )
+
+        # Редактируем сообщение
+        await callback.message.edit_text(
+            text=updated_text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=callback.message.reply_markup  # Оставляем кнопку
+        )
+
+        await callback.answer()
 
 # ПРИСОЕДИНЕНИЕ К СДЕЛКЕ
 async def _join_deal(message: Message, state: FSMContext, hex_id: str):
