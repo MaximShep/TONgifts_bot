@@ -3,6 +3,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
+from aiogram.exceptions import TelegramBadRequest
 
 from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, \
     create_welcome_keyboard, create_deal_wallet_selection, deal_address_keyboard_seller, deal_link_keyboard_seller, \
@@ -457,36 +458,7 @@ async def process_price(message: Message, state: FSMContext):
         parse_mode=ParseMode.HTML,
         reply_markup=keyboard_admin_deals
     )
-@router.callback_query(F.data.startswith("refresh_deal_"))
-async def refresh_deal_handler(callback: CallbackQuery):
-    deal_id = callback.data.split("_")[-1]
 
-    # Получаем актуальные данные сделки из БД или другого источника
-    deal = get_deal_by_hex(deal_id)  # <-- тут должна быть ваша функция получения сделки
-
-    if not deal:
-        await callback.answer("Сделка не найдена")
-        return
-
-    updated_text = (
-        f"<b>Сделка #{deal.id}</b>\n\n"
-        f"Статус: {deal.status}\n\n"
-        f"🛍️ NFT: {deal.gift_name}\n"
-        f"💰 Цена (без комиссии): {deal.price} TON\n\n"
-        f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
-        f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"
-        f"<b>💰 Сумма сделки (c комиссией): {deal.comission_price} TON</b>"
-    )
-
-    # Редактируем сообщение
-    if callback.message.text != updated_text or callback.message.reply_markup != callback.message.reply_markup:
-        await callback.message.edit_text(
-            text=updated_text,
-            parse_mode=ParseMode.HTML,
-            reply_markup=callback.message.reply_markup  # Оставляем кнопку
-        )
-
-    await callback.answer()
 
 # ПРИСОЕДИНЕНИЕ К СДЕЛКЕ
 async def _join_deal(message: Message, state: FSMContext, hex_id: str):
@@ -508,6 +480,13 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         )
         return
 
+    if deal.seller_id and deal.buyer_id:
+        user_lang = get_user_language(message.from_user.id)
+        await message.answer_photo(
+            photo=FSInputFile("assets/error.png"),
+            caption=get_text('already_full', user_lang)
+        )
+        return
 
     if is_new_user(telegram_id=message.from_user.id):
         save_or_update_user(
@@ -895,6 +874,37 @@ async def refresh_user_handler(callback: CallbackQuery):
 
     await callback.answer()
 
+@router.callback_query(F.data.startswith("refresh_deal_"))
+async def refresh_deal_handler(callback: CallbackQuery):
+    deal_id = callback.data.split("_")[-1]
+
+    # Получаем актуальные данные сделки
+    deal = get_deal_by_hex(deal_id)
+
+    updated_text = (
+        f"<b>Сделка #{deal.id}</b>\n\n"
+        f"Статус: {deal.status}\n\n"
+        f"🛍️ NFT: {deal.gift_name}\n"
+        f"💰 Цена (без комиссии): {deal.price} TON\n\n"
+        f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
+        f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"
+        f"<b>💰 Сумма сделки (c комиссией): {deal.comission_price} TON</b>"
+    )
+
+    try:
+        if callback.message.text.strip() != updated_text.strip():
+            await callback.message.edit_text(
+                text=updated_text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=callback.message.reply_markup
+            )
+    except TelegramBadRequest as e:
+        if "message is not modified" in e.message:
+            pass
+        else:
+            raise
+
+    await callback.answer()
 
 # #РАЗДЕЛ С ЯЗЫКАМИ
 # @router.callback_query(F.data == "language")
