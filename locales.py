@@ -100,10 +100,10 @@ LEXICON = {
         "not_leave":"Вы не можете выйти на этом этапе",
         "send_ton_payment": (
             "Оплата по сделке #{deal_id}\n"
-            "|\n"
+            "\n"
             "|-💰 Переведите <b>{amount}</b> TON на адрес:\n"
             f"|<code>{Config.ADMIN_TON_ADDRESS}</code>\n"
-            f"|\n"
+            f"\n"
             "|-⚠️ Обязательно введите комментарий:\n|<code>{comment}</code>\n\n"
             "<blockquote>У вас 15 минут на совершение оплаты, проверка происходит автоматически</blockquote>"
         ),
@@ -240,10 +240,10 @@ LEXICON = {
         "not_leave": "You cannot leave at this stage",
         "send_ton_payment": (
             "Payment for deal #{deal_id}\n"
-            "|\n"
+            "\n"
             "|-💰 Send <b>{amount}</b> TON to address:\n"
             f"|<code>{Config.ADMIN_TON_ADDRESS}</code>\n"
-            f"|\n"
+            f"\n"
             "|-⚠️ Enter comment:\n|<code>{comment}</code>\n\n"
             "<blockquote>You have 15 minutes for payment, verification is automatic</blockquote>"
         ),
