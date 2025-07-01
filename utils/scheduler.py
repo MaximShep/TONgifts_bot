@@ -18,6 +18,7 @@ class DealScheduler:
 
             for deal in active_deals:
                 try:
+                    update_deal_status(deal.id, 'time_out')
                     seller_lang=get_user_language(deal.seller_id)
                     await self.bot.send_message(
                         chat_id=deal.seller_id,
@@ -28,7 +29,6 @@ class DealScheduler:
                         chat_id=deal.buyer_id,
                         text=get_text('deal_time_out', buyer_lang).format(deal_id=deal.id),
                         reply_markup=close_keyboard(buyer_lang))
-                    update_deal_status(deal.id, 'time_out')
                 except Exception as e:
                     print(f"Ошибка уведомления: {e}")
 

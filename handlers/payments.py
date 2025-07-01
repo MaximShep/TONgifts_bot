@@ -8,7 +8,7 @@ from locales import get_text
 from ton_service import TonService
 from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username
 from utils.keyboards import create_payment_keyboard, close_keyboard, \
-    transfer_nft, create_back_to_menu_keyboard  # Если нужна клавиатура для других действий
+    transfer_nft, create_back_to_menu_keyboard, support_button  # Если нужна клавиатура для других действий
 from config import Config
 from utils.nft_checker import check_nft_owner
 import asyncio
@@ -90,20 +90,25 @@ async def automatic_payment_monitor(callback: CallbackQuery, deal):
 
 async def process_payment(callback: CallbackQuery, deal):
     """Обрабатывает успешную оплату"""
+    user_lang = get_user_language(callback.from_user.id)
     update_deal_status(deal.id, "payment_received")
+
     username = get_username(deal.buyer_id)
-    await callback.message.answer("✅ Оплата подтверждена! Ожидайте передачи подарка...")
+
+    await callback.message.answer(get_text('payment_confirmed', user_lang))
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
-        text="🎁 Оплата получена. Передайте NFT покупателю.",
-        reply_markup=transfer_nft(username)
+        text=get_text('payment_received_notification', user_lang).format(username=username),
+        reply_markup=transfer_nft(username, user_lang)  # Предполагается, что transfer_nft принимает user_lang
     )
 
-    # Начинаем проверку передачи NFT
+    # Запуск проверки передачи NFT
     asyncio.create_task(monitor_nft_transfer(callback, deal))
 
 
 async def monitor_nft_transfer(callback: CallbackQuery, deal):
+    """Проверяет передачу NFT после оплаты"""
+    user_lang = get_user_language(callback.from_user.id)
     max_time = 600  # 10 минут
     interval = 3
 
@@ -117,30 +122,29 @@ async def monitor_nft_transfer(callback: CallbackQuery, deal):
 
         await asyncio.sleep(interval)
 
-    # Возврат средств при неудаче
-    await callback.message.answer("⏳ Время истекло. Начинаем возврат средств...")
+    # Возврат средств при истечении времени
+    await callback.message.answer(get_text('payment_timeout_refund', user_lang))
     await ton_service.refund_payment(deal.buyer_address, deal.comission_price)
     update_deal_status(deal.id, "refunded")
-
 
 async def finalize_deal(callback: CallbackQuery, deal):
     """Завершает сделку и переводит средства"""
     buyer_lang = get_user_language(deal.buyer_id)  # Ваша функция получения языка
     seller_lang = get_user_language(deal.seller_id)  # Ваша функция получения языка
+    # После успешной передачи NFT
     await callback.message.bot.send_message(
         chat_id=deal.buyer_id,
-        text=f"✅ NFT получен! Сделка завершена\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
+        text=get_text('deal_completed_buyer', buyer_lang).format(link="https://t.me/mivelon_info "),
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=create_back_to_menu_keyboard(buyer_lang)
     )
-
     success = await ton_service.transfer_funds(deal.ton_address, deal.price, deal.id)
-
     if success:
         update_deal_status(deal.id, "completed")
+
         await callback.message.bot.send_message(
             chat_id=deal.seller_id,
-            text=f"✅ Сделка завершена! Вам переведено {deal.price} TON\n\nНовости об обновлениях Mivelon Garant в [официальном канале](https://t.me/mivelon) 🚀",
+            text=get_text('deal_completed_seller', seller_lang).format(price=deal.price,link="https://t.me/mivelon_info "),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=create_back_to_menu_keyboard(seller_lang)
         )
@@ -159,7 +163,8 @@ async def finalize_deal(callback: CallbackQuery, deal):
     else:
         await callback.message.bot.send_message(
             chat_id=deal.seller_id,
-            text="❌ Ошибка перевода средств. Свяжитесь с поддержкой."
+            text=get_text("transfer_money_error", seller_lang),
+            reply_markup = support_button(seller_lang)
         )
 
 # from aiogram import Router, F
