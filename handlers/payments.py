@@ -37,7 +37,8 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
         get_text('send_ton_payment', user_lang).format(
             amount=amount,
             ton_address=Config.ADMIN_TON_ADDRESS,
-            comment=comment
+            comment=comment,
+            deal_id=deal.id,
         ),
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=create_payment_keyboard(int(amount * 10 ** 9), comment, user_lang)

@@ -479,11 +479,12 @@ async def refresh_deal_handler(callback: CallbackQuery):
     )
 
     # Редактируем сообщение
-    await callback.message.edit_text(
-        text=updated_text,
-        parse_mode=ParseMode.HTML,
-        reply_markup=callback.message.reply_markup  # Оставляем кнопку
-    )
+    if callback.message.text != updated_text or callback.message.reply_markup != callback.message.reply_markup:
+        await callback.message.edit_text(
+            text=updated_text,
+            parse_mode=ParseMode.HTML,
+            reply_markup=callback.message.reply_markup  # Оставляем кнопку
+        )
 
     await callback.answer()
 
@@ -546,7 +547,15 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         await message.bot.send_photo(
             chat_id=deal.buyer_id,
             photo=FSInputFile("assets/hello.png"),
-            caption=get_text('seller_joined', user_lang).format(username=message.from_user.username)
+            caption=get_text('seller_joined', user_lang).format(
+                username=message.from_user.username,
+                user_id=message.from_user.id,
+                userbuyer_deals = len(get_userbuyer_deals(message.from_user.id)),
+                userseller_deals=len(get_userseller_deals(message.from_user.id)),
+                deals=len(get_userbuyer_deals(message.from_user.id)) + len(get_userseller_deals(message.from_user.id)),
+                date_creation=user.created_at
+            ),
+            parse_mode=ParseMode.HTML
         )
 
         # Генерируем список кошельков
@@ -598,7 +607,15 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         await message.bot.send_photo(
             chat_id=deal.seller_id,
             photo=FSInputFile("assets/hello.png"),
-            caption=get_text('buyer_joined', user_lang).format(username=message.from_user.username)
+            caption=get_text('buyer_joined', user_lang).format(
+                username=message.from_user.username,
+                user_id=message.from_user.id,
+                userbuyer_deals=len(get_userbuyer_deals(message.from_user.id)),
+                userseller_deals=len(get_userseller_deals(message.from_user.id)),
+                deals=len(get_userbuyer_deals(message.from_user.id)) + len(get_userseller_deals(message.from_user.id)),
+                date_creation=session.query(User).filter_by(telegram_id=message.from_user.id).first().created_at
+            ),
+            parse_mode = ParseMode.HTML,
         )
 
         await state.clear()
@@ -854,7 +871,7 @@ async def leave(callback: CallbackQuery):
 
 #Для чата админов
 @router.callback_query(F.data.startswith("refresh_user_"))
-async def refresh_deal_handler(callback: CallbackQuery):
+async def refresh_user_handler(callback: CallbackQuery):
     user_id = int(callback.data.split("_")[-1])
     user =  get_user_by_id(user_id)
     updated_text = (
