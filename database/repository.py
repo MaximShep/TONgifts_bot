@@ -14,14 +14,14 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def save_deal(sdelka_id:str, seller_id: int, buyer_id:int, ton_address: str, gift_name: str, price: float, comission_price: float) -> str:
-    """Создает новую сделку и сохраняет в БД [[3]][[5]]"""
+def save_deal(sdelka_id: str, seller_id: int, buyer_id: int, ton_address: str, gift_name: list[str], price: float, comission_price: float) -> str:
+    """Создает новую сделку и сохраняет в БД"""
     deal = Deal(
-        id = sdelka_id,  # Теперь функция доступна [[9]]
+        id=sdelka_id,
         seller_id=seller_id,
         buyer_id=buyer_id,
         ton_address=ton_address,
-        gift_name=gift_name,
+        gift_name=gift_name,  # теперь список
         price=price,
         comission_price=comission_price
     )

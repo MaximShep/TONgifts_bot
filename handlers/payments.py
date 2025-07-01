@@ -115,7 +115,7 @@ async def monitor_nft_transfer(callback: CallbackQuery, deal):
     interval = 3
 
     for _ in range(max_time // interval):
-        nft_owner = check_nft_owner(deal.gift_name)
+        nft_owner = check_nft_owner(deal.gift_name[0])
         buyer_username = callback.from_user.username
 
         if nft_owner == buyer_username:
@@ -153,7 +153,7 @@ async def finalize_deal(callback: CallbackQuery, deal):
         await callback.message.bot.send_message(
             chat_id=-1002751170506,
             text=f"<b>Сделка #{deal.id} завершена!</b>\n\n"
-                 f"🛍️ NFT: {deal.gift_name}\n"
+                 f"🛍️ NFT: {deal.gift_name[0]}\n"
                  f"💰 Цена (без комиссии): {deal.price} TON\n\n"
                  f"Продавец: @{get_username(deal.seller_id)} [{deal.seller_id}]\n"
                  f"Покупатель: @{get_username(deal.buyer_id)} [{deal.buyer_id}]\n\n"

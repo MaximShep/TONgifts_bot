@@ -17,10 +17,10 @@ class Deal(Base):
     buyer_id = Column(Integer)
     ton_address = Column(String(48), nullable=False)
     buyer_address = Column(String(48))
-    gift_name = Column(String(100), nullable=False)
+    gift_name = Column(JSON, nullable=False)  # Было String(100)
     price = Column(Float, nullable=False)
     comission_price = Column(Float, nullable=False)
-    status = Column(String(20), default="created") #created, time_out, start_payment, canceled, payment_received, refunded, refunded_because_scam, completed
+    status = Column(String(20), default="created")
     date = Column(DateTime, default=datetime.utcnow)
     commission_owner = Column(Enum(CommissionOwner), default=CommissionOwner.buyer)
     revenue = Column(Float)

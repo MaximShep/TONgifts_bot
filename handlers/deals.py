@@ -390,7 +390,7 @@ async def process_price(message: Message, state: FSMContext):
                 seller_id=None,
                 buyer_id=message.from_user.id,
                 ton_address=data["ton_address"],
-                gift_name=data["gift_name"],
+                gift_name=[data["gift_name"]],
                 price=float(message.text),
                 comission_price = round(float(message.text) + 0.01, 6)
             )
@@ -401,7 +401,7 @@ async def process_price(message: Message, state: FSMContext):
                 seller_id=None,
                 buyer_id=message.from_user.id,
                 ton_address=data["ton_address"],
-                gift_name=data["gift_name"],
+                gift_name=[data["gift_name"]],
                 price=float(message.text),
                 comission_price = round(float(message.text) * (1 + float(os.getenv("COMMISSION_PERCENT"))), 6)
             )
@@ -413,7 +413,7 @@ async def process_price(message: Message, state: FSMContext):
                 seller_id=message.from_user.id,
                 buyer_id=None,
                 ton_address=data["ton_address"],
-                gift_name=data["gift_name"],
+                gift_name=[data["gift_name"]],
                 price=float(message.text),
                 comission_price = round(float(message.text) + 0.01, 6)
             )
@@ -423,7 +423,7 @@ async def process_price(message: Message, state: FSMContext):
                 seller_id=message.from_user.id,
                 buyer_id=None,
                 ton_address=data["ton_address"],
-                gift_name=data["gift_name"],
+                gift_name=[data["gift_name"]],
                 price=float(message.text),
                 comission_price = round(float(message.text) * (1 + float(os.getenv("COMMISSION_PERCENT"))), 6)
             )
@@ -432,7 +432,7 @@ async def process_price(message: Message, state: FSMContext):
     deal = get_deal_by_hex(hex_id)
     text = get_text("deal_created", user_lang).format(
         hex_id=hex_id,
-        gift_name=deal.gift_name,
+        gift_name=deal.gift_name[0],
         price=float(message.text),
         percent=Config.COMMISSION_PERCENT*100,
         link=link
@@ -448,7 +448,7 @@ async def process_price(message: Message, state: FSMContext):
         chat_id=-1002751170506,
         text=f"<b>Сделка #{deal.id}</b>\n\n"
             f"Статус: {deal.status}\n\n"
-            f"🛍️ NFT: {deal.gift_name}\n"
+            f"🛍️ NFT: {deal.gift_name[0]}\n"
             f"💰 Цена (без комиссии): {deal.price} TON\n\n"
             f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
             f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"
@@ -512,7 +512,7 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         update_deal_seller(deal.id, seller_id=message.from_user.id)
         await state.update_data(id=deal.id)
         await state.update_data(seller_id=message.from_user.id)
-        await state.update_data(gift_name=deal.gift_name)
+        await state.update_data(gift_name=deal.gift_name[0])
         await state.update_data(comission_price=deal.comission_price)
         await state.update_data(buyer_id=deal.buyer_id)
 
@@ -545,7 +545,7 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         # Формируем текст
         text =  get_text('join_deal_seller', user_lang).format(
             deal_id=deal.id,
-            gift_name=deal.gift_name,
+            gift_name=deal.gift_name[0],
             price=deal.comission_price,
             percent=Config.COMMISSION_PERCENT * 100
         )+"\n"+ get_text('select_wallet_for_deal', user_lang).format(
@@ -568,7 +568,7 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         # Генерируем текст для покупателя
         text = get_text('join_deal_buyer', user_lang).format(
             deal_id=deal.id,
-            gift_name=deal.gift_name,
+            gift_name=deal.gift_name[0],
             price=deal.comission_price,
             percent=Config.COMMISSION_PERCENT * 100
         )
@@ -616,7 +616,7 @@ async def buyer_join_set_language(callback: CallbackQuery):
     user_lang = user.language if user else 'en'  # Язык по умолчанию
     text = get_text('join_deal_buyer', user_lang).format(
         deal_id=deal.id,
-        gift_name=deal.gift_name,
+        gift_name=deal.gift_name[0],
         price=deal.comission_price,
         percent=Config.COMMISSION_PERCENT * 100
     )
@@ -653,7 +653,7 @@ async def seller_join_set_language(callback: CallbackQuery, state: FSMContext):
     text = (
             get_text('join_deal_seller', user_lang).format(
                 deal_id=deal.id,
-                gift_name=deal.gift_name,
+                gift_name=deal.gift_name[0],
                 price=deal.price,
                 percent=Config.COMMISSION_PERCENT * 100
             ) +
@@ -688,7 +688,7 @@ async def deal_change_wallets_when_join(callback: CallbackQuery, state: FSMConte
     text = (
             get_text('join_deal_seller', user_lang).format(
                 deal_id=deal.id,
-                gift_name=deal.gift_name,
+                gift_name=deal.gift_name[0],
                 price=deal.price,
                 percent=Config.COMMISSION_PERCENT * 100
             ) +
@@ -883,7 +883,7 @@ async def refresh_deal_handler(callback: CallbackQuery):
     updated_text = (
         f"<b>Сделка #{deal.id}</b>\n\n"
         f"Статус: {deal.status}\n\n"
-        f"🛍️ NFT: {deal.gift_name}\n"
+        f"🛍️ NFT: {deal.gift_name[0]}\n"
         f"💰 Цена (без комиссии): {deal.price} TON\n\n"
         f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
         f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"

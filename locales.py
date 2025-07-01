@@ -99,10 +99,12 @@ LEXICON = {
         "you_leave":"Вы вышли из сделки",
         "not_leave":"Вы не можете выйти на этом этапе",
         "send_ton_payment": (
-            "Оплата по сделке #{deal_id}\n\n"
-            "💰 Переведите <b>{amount}</b> TON на адрес:\n"
-            f"<code>{Config.ADMIN_TON_ADDRESS}</code>\n\n"
-            "⚠️ Обязательно введите комментарий:\n <code>{comment}</code>\n\n"
+            "Оплата по сделке #{deal_id}\n"
+            "|\n"
+            "|-💰 Переведите <b>{amount}</b> TON на адрес:\n"
+            f"|<code>{Config.ADMIN_TON_ADDRESS}</code>\n"
+            f"|\n"
+            "|-⚠️ Обязательно введите комментарий:\n|<code>{comment}</code>\n\n"
             "<blockquote>У вас 15 минут на совершение оплаты, проверка происходит автоматически</blockquote>"
         ),
         "payment_started_notification": "Покупатель начал оплату. Ожидайте подтверждения.",
@@ -129,7 +131,7 @@ LEXICON = {
         # ... остальные ключи
     },
     "EN": {
-"role_seller": "🎁 Seller",
+        "role_seller": "🎁 Seller",
         "role_buyer": "💸 Buyer",
         "back_button": "🔙 Back",
         "wallet_button": "💸Wallet",
@@ -154,100 +156,124 @@ LEXICON = {
         "tonkeep": "💸Go to Tonkeeper",
         "russian": "🇷🇺Russian",
         "english": "🇺🇸English",
-        "selected_ton_address": "💳Selected TON address:\n<code>{ton_address}</code>\n\n🔗 <u>Send a link</u> to the gift:",
-"menu_message": "💎 You're still in <b>Mivelon Guarantor</b>. Main MENU\n\n"
-                "🔒 Secure NFT deals\n"
-                "💰 Unique wallet management system\n"
-                "✅ Automatic gift transfer verification (no confirmations required)\n\n"
-                "<i>Create a deal or join an existing one:</i>",
-"welcome_message": "💎Welcome to <b>Mivelon Guarantor</b> - the first fully automated guarantor\n\n"
-                   "🔒 Secure NFT deals\n"
-                   "💰 Unique wallet management system\n"
-                   "✅ Automatic gift transfer verification (no confirmations required)\n\n"
-                   "<i>Create a deal or join an existing one:</i>",
-        "role_selection": "🧑‍💻Choose ROLE\n\n"
-                          "🎁<b>Seller</b> - current gift owner\n"
-                          "💸<b>Buyer</b> - pays TON\n\n"
-                          "<i>You'll need a gift link to create a deal. You can copy it to clipboard now.</i>",
+        # Полностью переведённые ключи с сохранением форматирования
+        "menu_message": '🤙 You\'re still in <b>Mivelon Guarantor</b>, our bot is:\n\n'
+                        '<i>🔘 Secure NFT gift deals\n'
+                        '🔘️ Unique wallet management system\n'
+                        '🔘 Automatic gift transfer verification</i>\n\n'
+                        'Create a deal or join an existing one\n\n'
+                        '<blockquote><i>ALL JULY commission is 1%</i></blockquote>',
+
+        "welcome_message": '🤙 Welcome to <b>Mivelon Guarantor</b>, our bot is:\n\n'
+                           '<i>🔘 Secure NFT gift deals\n'
+                           '🔘️ Unique wallet management system\n'
+                           '🔘 Automatic gift transfer verification</i>\n\n'
+                           'Create a deal or join an existing one\n\n'
+                           '<blockquote><i>ALL JULY commission is 1%</i></blockquote>',
+
+        "role_selection": "𝟏 Choose ROLE\n\n"
+                          "🔘<b>Seller</b> - current gift owner\n"
+                          "🔘<b>Buyer</b> - pays TON\n\n"
+                          "<blockquote><i>You need a <u>gift link</u> to create a deal</i></blockquote>",
+
         "deal_not_found": "Deal not found. Check HEX code.",
         "already_participant": "You are already a participant of this deal.",
-        "seller_joined": "Seller @{username} joined the deal!",
-        "buyer_joined": "Buyer @{username} joined the deal!",
-        "select_wallet_for_deal": "<b>💼 For deal continuation <u>Select WALLET</u> (TONs will come here):</b>\n"
-                                 "{wallet_list}\n"
-                                 "{no_wallets}\n"
-                                 "🤝You can <i><b>enter new address</b></i> or select existing",
-        "select_wallet": "<b>💼 <u>Select WALLET</u> (TONs will come here):</b>\n"
-                                 "{wallet_list}\n"
-                                 "{no_wallets}\n"
-                                 "🤝You can <i><b>enter new address</b></i> or select existing",
-        "no_saved_wallets": "😭No saved wallets",
+        "seller_joined": "Seller @{username} [{user_id}] joined the deal!\n\n"
+                         "🔘Deals as seller: {userbuyer_deals}\n"
+                         "🔘Deals as buyer: {userseller_deals}\n"
+                         "🔘<b>Total deals: {deals}</b>\n\n"
+                         "<blockquote>Check if this is the same user you talked to</blockquote>",
+
+        "buyer_joined": "Buyer @{username} [{user_id}] joined the deal!\n\n"
+                        "🔘Deals as seller: {userbuyer_deals}\n"
+                        "🔘Deals as buyer: {userseller_deals}\n"
+                        "🔘<b>Total deals: {deals}</b>\n\n"
+                        "<blockquote>Check if this is the same user you talked to</blockquote>",
+
+        "select_wallet_for_deal": "💼 <b>To continue <u>Select WALLET</u> for deal (TONs will come here):</b>\n\n"
+                                  "{wallet_list}"
+                                  "{no_wallets}"
+                                  "\n\n<blockquote>🔗You can <i><b>enter new address</b></i> or select existing</blockquote>",
+
+        "select_wallet": "𝟐/𝟒 <b><u>Select WALLET</u> for deal (payment will come here):</b>\n\n"
+                         "{wallet_list}"
+                         "{no_wallets}"
+                         "\n\n<blockquote>🔗You can <i><b>enter new address</b></i> or select existing</blockquote>",
+
+        "no_saved_wallets": "No saved wallets",
         "commission_info": "(service fee {percent}% paid by buyer)",
-        "join_deal_seller": "<b>🔗 You joined deal #{deal_id}</b>\n"
+        "join_deal_seller": "<b>🔗 You joined deal #{deal_id}</b>\n\n"
                             "🛍️ You're selling: {gift_name}\n"
                             "💰 NFT price: {price} TON\n"
-                            "<i>(service fee {percent}% paid by buyer)👇</i>",
-        "join_deal_buyer": "<b>🔗 You joined deal #{deal_id}</b>\n"
-                           "🛍️ You're buying: {gift_name}\n"
-                           "💰 Amount to pay: <b>{price} TON</b>\n"
-                           "<i>Service fee is {percent}% of deal amount (for deals below 0.01 TON, fee is 0.01 TON)</i>",
+                            "<blockquote><i>(service fee {percent}% paid by buyer, minimum fee 0.01 TON)</i></blockquote>",
+
+        "join_deal_buyer": "<b>🔗 You joined deal #{deal_id}</b>\n\n"
+                           "🛍️ You\'re buying: {gift_name}\n"
+                           "💰 Amount to pay: <u><b>{price} TON</b></u>\n"
+                           "<blockquote><i>Service fee is {percent}% of deal amount (minimum fee 0.01 TON)</i></blockquote>",
+
         "ton_address_confirmed": "TON address accepted! Waiting for buyer's payment.",
-        "payment_required": "<b>🔗 Payment for deal #{deal_id}</b>\n"
-                            "🛍️ You're buying: {gift_name}\n"
-                            "💰 Amount to pay: <b>{price} TON</b>\n"
-                            "<i>Service fee is {percent}% of deal amount</i>",
+        "payment_required": "<b>🔗 Payment for deal #{deal_id}</b>\n🛍️ You're buying: {gift_name}\n💰 Amount to pay: <b>{price} TON</b>\n<i>Service fee is {percent}% of deal amount</i>",
         "invalid_ton_address": "❗️INVALID TON address format. <u><i>Try again</i></u>❗️\n"
                                "💼 <b>Select DEAL WALLET (TONs will come here):</b>\n"
                                "{wallet_list}\n"
                                "{no_wallets}\n"
                                "🤝You can <i><b>enter new address</b></i> or select existing",
-        "deal_created": "<b>Deal created! #{hex_id}</b>\n"
-                        "🛍️ NFT for sale: {gift_name}\n"
-                        "💰 NFT price: {price} TON\n"
-                        "<i>(service fee {percent}% paid by buyer)</i>\n"
-                        "Share this link with second participant:\n{link}>",
+
+        "deal_created": "<b>Deal created! #{hex_id}</b>\n\n🛍️ NFT for sale: {gift_name}\n💰 NFT price: <u>{price}</u> TON\n<blockquote><i>(service fee {percent}% paid by buyer)</i></blockquote>\n\n🔗Share link with second participant:\n|\n|-<code>{link}</code>",
         "ton_address_accepted": "TON address accepted! Waiting for buyer's payment.",
         "select_wallet_first": "⚠️ Please select a wallet first!",
         "wallet_selected": "Active wallet: {wallet}",
-        "referral_program": "😭Referral program is not ready",
-       "language_selection": "🌏 Выберите язык / Choose language",
-        "unknown_language": "🤔Unknown language",
-        "buyer_enter_gift_link": "🔗 Enter the link to the gift:",
-        "deal_time_out": "The deal #{deal_id} was canceled automatically due to lack of activity",
-        "leave_message": "@{username} leave the deal #{deal_id}",
-        "invalid_gift_link": "Invalid gift link format. Try again:",
-        "enter_price": "💵 Enter gift price in TON (format 0.01):",
+        "selected_ton_address": "𝟑/𝟒 Selected TON address:\n<blockquote><code>{ton_address}</code></blockquote>\n\n🔗 <u>Send gift link</u>:",
+
+        "referral_program": "😭 Referral program under development",
+        "language_selection": "🌏 Select language / Choose language",
+        "unknown_language": "🤔 Unsupported language",
+        "buyer_enter_gift_link": "𝟐/𝟑 Send gift link 🔗",
+        "deal_time_out": "Deal #{deal_id} canceled automatically due to inactivity",
+        "leave_message": "@{username} left deal #{deal_id}",
+        "invalid_gift_link": "Invalid link format. Try again:",
+        "enter_price": "🆗Enter gift price in TON (format 0.01):",
         "deal_canceled": "❌ Deal canceled",
-        "price_must_be_number": "PRICE must be a number GREATER THAN 0.\nUse '.' for decimal values\n\nTry again:",
-        "you_leave":"You left the deal",
-        "not_leave":"You can't leave the deal on this step",
+        "price_must_be_number": "PRICE must be a number GREATER THAN 0.\n<i>Use '.' for decimal values</i>\n\nTry again:",
+        "you_leave": "You left the deal",
+        "not_leave": "You cannot leave at this stage",
         "send_ton_payment": (
-            "💰 Send *{amount}* TON to address:\n"
-            f"`{Config.ADMIN_TON_ADDRESS}`\n\n"
-            "⚠️ Enter comment: `{comment}`"
+            "Payment for deal #{deal_id}\n"
+            "|\n"
+            "|-💰 Send <b>{amount}</b> TON to address:\n"
+            f"|<code>{Config.ADMIN_TON_ADDRESS}</code>\n"
+            f"|\n"
+            "|-⚠️ Enter comment:\n|<code>{comment}</code>\n\n"
+            "<blockquote>You have 15 minutes for payment, verification is automatic</blockquote>"
         ),
         "payment_started_notification": "Buyer started payment. Waiting for confirmation.",
-        "payment_timeout": "⏰ Payment timeout. Deal canceled.",
-        "payment_confirmed": "✅ Payment confirmed! Waiting for gift transfer...",
-        "payment_received_notification": "🎁 Payment received from @{username}. Transfer NFT to buyer.",
+        "payment_timeout": "⏰ Payment time expired. Deal canceled.",
+        "payment_confirmed": "✅ Payment confirmed! Waiting for gift transfer...\n\n"
+                             "<blockquote>Transfer will be verified automatically. If gift doesn't appear in your profile in 15 minutes, TON will be returned</blockquote>",
+
+        "payment_received_notification": "🎁 Payment received from @{username}. Transfer NFT to buyer.\n\n"
+                                         "<blockquote>Transfer will be verified automatically, you have 15 minutes</blockquote>",
+
         "payment_timeout_refund": "⏳ Time expired. Starting refund...",
-        "deal_completed_buyer": "✅ NFT received! Deal completed\n\nUpdates about Mivelon Guarantor in [official channel]({link}) 🚀",
-        "deal_completed_seller": "✅ Deal completed! You received {price} TON\n\nUpdates about Mivelon Guarantor in [official channel]({link}) 🚀",
+        "deal_completed_buyer": "✅ NFT received! Deal completed\n\nNews about Mivelon Guarantor updates in [official channel]({link}) 🚀",
+        "deal_completed_seller": "✅ Deal completed! You received {price} TON\n\nNews about Mivelon Guarantor updates in [official channel]({link}) 🚀",
         "transfer_money_error": "❌ Funds transfer error. Contact support.",
-        "your_wallets": "<b>💼 Your WALLETS:</b>",
+        "your_wallets": "<b>💼 YOUR WALLETS:</b>",
         "enter_ton_address_prompt": "📥 <b>Enter TON wallet address</b>\n\nExample: EQ... or UQ...",
-        "wallet_invalid_address_format": "⚠️ <b>Invalid address format!</b> \n\n <i>Address must start with EQ or UQ and contain 48 characters</i>",
+        "wallet_invalid_address_format": "⚠️ <b>Invalid address format!</b>\n\n <i>Address must start with EQ or UQ and contain 48 characters</i>",
         "wallet_added_success": "✅ <b>Wallet added!</b>",
-        "select_wallet_to_delete": "👇Select wallet to delete:",
+        "select_wallet_to_delete": "👇 Select wallet to delete:",
         "no_wallets_to_delete": "❌ You have no saved wallets",
         "wallet_selection_error": "❌ Wallet selection error",
-        "confirm_wallet_deletion": "😕 Delete wallet?\n\n{wallet}",
-        "success_delete":"✅ Wallet deleted!",
-        "already_full": "Ooops, all members are already hear",
+        "confirm_wallet_deletion": "😕Delete wallet?\n\n{wallet}",
+        "success_delete": "✅ Wallet deleted!",
+        "already_full": "Oops, everything's already here"
+    }
 
         # ... остальные ключи
     }
-}
+
 # LEXICON = {
 #     "RU": {
 #         "menu_message": "💎 И вы до сих пор в <b>Mivelon Guarantor</b> - в главном МЕНЮ\n\n"+
