@@ -57,9 +57,11 @@ class TonService:
             for tx in transactions:
                 in_msg = tx.get("in_msg", {})
                 idshnik = in_msg.get("hash", "")
+                fee = in_msg.get("fwd_fee", 0)
                 amount = in_msg.get("value", 0)
                 comment = in_msg.get("decoded_body", {}).get("text", "")
                 buyer_address = in_msg.get("source", {}).get("address", "")
+
 
                 if pattern.search(comment) and amount < expected_amount:
                     print(f"⚠️ Недостаточная сумма: {amount / 10 ** 9} TON вместо {expected_ton}")
@@ -67,19 +69,46 @@ class TonService:
                         create_refund(
                             deal_id=idshnik,
                             wallet_address=buyer_address,
-                            refund_amount=amount / 10 ** 9,
+                            refund_amount=((amount / 10 ** 9)-(fee/10**9)),
                         )
-                        await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
+                        await self.refund_payment(buyer_address, ((amount / 10 ** 9)-(fee/10**9)))  # Возвращаем полученную сумму
                         update_deal_status(hex_id, "refunded_because_scam")
-                        print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                        print(f"🔄 Автоматический возврат {((amount / 10 ** 9)-(fee/10**9))} TON на {buyer_address}")
                     else:
                         print('Платеж уже был возвращен')
                     return False
+
+            # Проверяем платежи с верным комментарием, но БОЛЬШЕЙ СУММОЙ
+            for tx in transactions:
+                in_msg = tx.get("in_msg", {})
+                idshnik = in_msg.get("hash", "")
+                fee = in_msg.get("fwd_fee", 0)
+                amount = in_msg.get("value", 0)
+                comment = in_msg.get("decoded_body", {}).get("text", "")
+                buyer_address = in_msg.get("source", {}).get("address", "")
+
+                if pattern.search(comment) and amount > expected_amount:
+                    print(f"⚠️ Сумма больше. Переведено: {amount / 10 ** 9} TON вместо {expected_ton}")
+                    if not check_refund_exists(idshnik):
+                        create_refund(
+                            deal_id=idshnik,
+                            wallet_address=buyer_address,
+                            refund_amount=((amount / 10 ** 9) - expected_ton - (fee / 10 ** 9)),
+                        )
+                        await self.refund_payment(buyer_address, (
+                                    (amount / 10 ** 9) -expected_ton- (fee / 10 ** 9)))  # Возвращаем полученную сумму
+                        update_deal_status(hex_id, "refunded_because_scam")
+                        print(
+                            f"🔄 Автоматический возврат {((amount / 10 ** 9) - expected_ton - (fee / 10 ** 9))} TON на {buyer_address}")
+                    else:
+                        print('Платеж уже был возвращен')
+                    return True
 
             # Проверяем платежи без комментария
             for tx in transactions:
                 in_msg = tx.get("in_msg", {})
                 idshnik = in_msg.get("hash", "")
+                fee = in_msg.get("fwd_fee", 0)
                 amount = in_msg.get("value", 0)
                 buyer_address = in_msg.get("source", {}).get("address", "")
                 comment = in_msg.get("decoded_body", {}).get("text", "")
@@ -89,10 +118,10 @@ class TonService:
                         create_refund(
                             deal_id=idshnik,
                             wallet_address=buyer_address,
-                            refund_amount=amount / 10 ** 9,
+                            refund_amount=((amount / 10 ** 9)-(fee/10**9)),
                         )
-                        await self.refund_payment(buyer_address, amount / 10 ** 9)  # Возвращаем полученную сумму
-                        print(f"🔄 Автоматический возврат {amount / 10 ** 9} TON на {buyer_address}")
+                        await self.refund_payment(buyer_address, ((amount / 10 ** 9)-(fee/10**9)))  # Возвращаем полученную сумму
+                        print(f"🔄 Автоматический возврат {((amount / 10 ** 9)-(fee/10**9))} TON на {buyer_address}")
                     return False
 
             print("❌ Платеж не найден или сумма не совпадает")

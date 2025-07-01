@@ -212,7 +212,7 @@ def buyer_join_language_keyboard(deal_id: str,user_lang: str = 'en') -> InlineKe
 
 def transfer_nft(username:str,user_lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=get_text("transfer_nft_button"), url="https://t.me/{username}")]
+        [InlineKeyboardButton(text=get_text("transfer_nft_button", user_lang), url=f"https://t.me/{username}")]
     ])
 def support_button(user_lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[

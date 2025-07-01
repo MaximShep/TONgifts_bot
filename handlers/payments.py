@@ -40,7 +40,7 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
             comment=comment,
             deal_id=deal.id,
         ),
-        parse_mode=ParseMode.MARKDOWN,
+        parse_mode=ParseMode.HTML,
         reply_markup=create_payment_keyboard(int(amount * 10 ** 9), comment, user_lang)
     )
 
@@ -59,7 +59,7 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
 
 async def automatic_payment_monitor(callback: CallbackQuery, deal):
     """Автоматически проверяет оплату каждые 3 секунды"""
-    max_time = 600  # 10 минут
+    max_time = 900  # 15 минут
     interval = 5  # Интервал проверки
     deal_id = callback.data.split("_")[2]  # Извлекаем ID сделки [[8]]
     deal = get_deal_by_id(deal_id)
@@ -100,6 +100,7 @@ async def process_payment(callback: CallbackQuery, deal):
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
         text=get_text('payment_received_notification', user_lang).format(username=username),
+        parse_mode=ParseMode.HTML,
         reply_markup=transfer_nft(username, user_lang)  # Предполагается, что transfer_nft принимает user_lang
     )
 
@@ -110,7 +111,7 @@ async def process_payment(callback: CallbackQuery, deal):
 async def monitor_nft_transfer(callback: CallbackQuery, deal):
     """Проверяет передачу NFT после оплаты"""
     user_lang = get_user_language(callback.from_user.id)
-    max_time = 600  # 10 минут
+    max_time = 900  # 15 минут
     interval = 3
 
     for _ in range(max_time // interval):
@@ -135,7 +136,7 @@ async def finalize_deal(callback: CallbackQuery, deal):
     # После успешной передачи NFT
     await callback.message.bot.send_message(
         chat_id=deal.buyer_id,
-        text=get_text('deal_completed_buyer', buyer_lang).format(link="https://t.me/mivelon_info "),
+        text=get_text('deal_completed_buyer', buyer_lang).format(link="https://t.me/mivelon_info"),
         parse_mode=ParseMode.MARKDOWN,
         reply_markup=create_back_to_menu_keyboard(buyer_lang)
     )
@@ -145,7 +146,7 @@ async def finalize_deal(callback: CallbackQuery, deal):
 
         await callback.message.bot.send_message(
             chat_id=deal.seller_id,
-            text=get_text('deal_completed_seller', seller_lang).format(price=deal.price,link="https://t.me/mivelon_info "),
+            text=get_text('deal_completed_seller', seller_lang).format(price=deal.price,link="https://t.me/mivelon_info"),
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=create_back_to_menu_keyboard(seller_lang)
         )

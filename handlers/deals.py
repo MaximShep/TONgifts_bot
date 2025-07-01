@@ -429,7 +429,6 @@ async def process_price(message: Message, state: FSMContext):
             )
     await state.clear()  # Сброс состояния после присоединения [[6]]
     link = f"https://t.me/{Config.BOT_USERNAME}?start={hex_id}"
-    print(link)
     deal = get_deal_by_hex(hex_id)
     text = get_text("deal_created", user_lang).format(
         hex_id=hex_id,
@@ -549,7 +548,7 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
             gift_name=deal.gift_name,
             price=deal.comission_price,
             percent=Config.COMMISSION_PERCENT * 100
-        )+ get_text('select_wallet_for_deal', user_lang).format(
+        )+"\n"+ get_text('select_wallet_for_deal', user_lang).format(
             wallet_list=wallet_list,
             no_wallets=no_wallets
         )
