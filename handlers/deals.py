@@ -8,12 +8,14 @@ from aiogram.exceptions import TelegramBadRequest
 from utils.keyboards import create_role_keyboard, create_confirmation_keyboard, create_start_payment_keyboard, \
     create_welcome_keyboard, create_deal_wallet_selection, deal_address_keyboard_seller, deal_link_keyboard_seller, \
     create_language_keyboard, join_deal_wallet_selection, deal_address_keyboard_buyer, close_keyboard, \
-    not_join_start_payment_keyboard
+    not_join_start_payment_keyboard, back_to_menu_from_ref_keyboard
+from utils.reflinks import decode_telegram_id, encode_telegram_id
 from utils.validators import validate_ton_address, validate_price, validate_tg_nft_link
 from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, \
     update_ton_address, add_user_wallet, set_active_wallet, get_user_language, update_user_language, check_status, \
-    exit_deal, get_username, is_new_user, get_user_by_id, get_userbuyer_deals, get_userseller_deals
+    exit_deal, get_username, is_new_user, get_user_by_id, get_userbuyer_deals, get_userseller_deals, get_referral_count, \
+    get_referral_revenue, reset_referral_revenue
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
@@ -40,16 +42,60 @@ class BuyerStates(StatesGroup):
     wait_payment = State()  # Новое состояние для перехода к оплате
     wait_payment_confirmation = State()  # Ожидание подтверждения
 
-
-
-# --- Обработка команды /start с deep-линком ---
 @router.message(CommandStart(deep_link=True))
 async def handle_deep_link(message: Message, state: FSMContext, command: CommandStart):
     """
-    Обрабатывает переход по ссылке вида t.me/bot?start=HEX_ID [[5]][[8]]
+    Обрабатывает переход по ссылке вида t.me/bot?start=PAYLOAD
+    Поддерживает два формата:
+    1. Реферальные ссылки: ref_{inviter_id}
+    2. Присоединение к сделке: deal_{hex_id}
     """
-    hex_id = command.args  # Используем встроенный парсинг аргументов [[8]]
-    await _join_deal(message, state, hex_id)
+    payload = command.args  # Получаем полезную нагрузку из deep-линка
+
+    # Проверяем формат payload
+    if payload.startswith('ref_'):
+        # Обработка реферальной ссылки
+        inviter_id = int(decode_telegram_id(payload[4:]))  # Извлекаем ID пригласителя
+        await handle_referral(message, inviter_id)
+
+    elif payload.startswith('deal_'):
+        # Обработка присоединения к сделке
+        hex_id = payload[5:]
+        await _join_deal(message, state, hex_id)
+
+    else:
+        # Обработка неизвестного формата
+        await message.answer("Неверный формат ссылки")
+
+async def handle_referral(message: Message, inviter_id: int):
+    """Обрабатывает регистрацию по реферальной ссылке"""
+    user_id = message.from_user.id
+    user = session.query(User).filter_by(telegram_id=user_id).first()
+    user_lang = get_user_language(user_id)
+    if not user:
+        # Проверяем, существует ли пригласитель
+        inviter = session.query(User).filter_by(telegram_id=inviter_id).first()
+        if not inviter:
+            await message.answer("Неверная реферальная ссылка")
+            return
+        # Сохраняем пользователя с указанием пригласителя
+        save_or_update_user(
+            telegram_id=user_id,
+            username=message.from_user.username,
+            inviter_id=inviter_id
+        )
+        await message.bot.send_message(
+            chat_id=inviter_id,
+            text=f"У вас новый реферал {message.from_user.username}!",
+            parse_mode=ParseMode.HTML,
+            reply_markup=close_keyboard(get_user_language(inviter_id))
+        )
+    await message.answer_photo(
+        photo=FSInputFile("assets/startCover.png"),  # Замените на вашу ссылку или file_id [[1]]
+        caption=get_text('welcome_message', user_lang),
+        parse_mode=ParseMode.HTML,
+        reply_markup=create_welcome_keyboard(user_lang)
+    )
 
 # --- Обработка ручного ввода HEX-кода ---
 @router.message(BuyerStates.wait_hex_code)
@@ -154,11 +200,28 @@ async def close_action(callback: CallbackQuery):
 #РАЗДЕЛ С РЕФЕРАЛАМИ
 @router.callback_query(F.data == "referral")
 async def process_referral(callback: CallbackQuery):
+    await callback.message.delete()  # Удаляем сообщение
     user_id = callback.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)
-    await callback.answer(get_text('referral_program', user_lang), show_alert=True)
-
-
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    link=f"https://t.me/{Config.BOT_USERNAME}?start=ref_{encode_telegram_id(user_id)}"
+    count_of_referrals = get_referral_count(user_id)
+    revenue = get_referral_revenue(user_id)
+    text=f"РЕФЕРАЛЬНАЯ программа, ваша ссылка:\n\n<code>{link}</code>\n\nКоличество приведенных пользователей: <u><b>{count_of_referrals}</b></u>\nЗаработано: <u><b>{revenue}</b></u>\n\nАктивный кошелек:\n<i>{user.active_wallet}</i>\n<blockquote>Вывести средства на активный адрес можно только от <u>1 TON</u></blockquote>"
+    await callback.message.answer_photo(
+        photo=FSInputFile("assets/menu.png"),
+        caption=text,
+        parse_mode=ParseMode.HTML,
+        reply_markup=back_to_menu_from_ref_keyboard(user_lang)
+    )
+#Вывод средств
+@router.callback_query(F.data == "money_ref")
+async def give_me_my_refs(callback: CallbackQuery):
+    user_lang = get_user_language(callback.from_user.id)
+    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
+    reset_referral_revenue(callback.from_user.id)
+    await callback.answer(f"Средства выведены на {user.active_wallet}", show_alert=True)
+    await go_menu(callback)
 
 # СОЗДАНИЕ СДЕЛКИ
 
@@ -428,7 +491,7 @@ async def process_price(message: Message, state: FSMContext):
                 comission_price = round(float(message.text) * (1 + float(os.getenv("COMMISSION_PERCENT"))), 6)
             )
     await state.clear()  # Сброс состояния после присоединения [[6]]
-    link = f"https://t.me/{Config.BOT_USERNAME}?start={hex_id}"
+    link = f"https://t.me/{Config.BOT_USERNAME}?start=deal_{hex_id}"
     deal = get_deal_by_hex(hex_id)
     text = get_text("deal_created", user_lang).format(
         hex_id=hex_id,

@@ -27,6 +27,7 @@ class Deal(Base):
     note = Column(String(255))
     extra_data = Column(JSON, default=lambda: {})
 
+
 class User(Base):
     __tablename__ = "users"
     telegram_id = Column(Integer, primary_key=True)
@@ -34,11 +35,13 @@ class User(Base):
     wallets = Column(JSON, default=lambda: [])
     active_wallet = Column(String(48))
     created_at = Column(DateTime, default=datetime.utcnow)
-    invited_by = Column(Integer, ForeignKey('users.telegram_id'))
+    invited_by = Column(Integer, ForeignKey('users.telegram_id'))  # Указываем связь
     last_activity = Column(DateTime, default=datetime.utcnow)
     dop_column = Column(JSON, default=lambda: {})
-    language = Column(String(5), default='ru')  # Новая колонка
+    language = Column(String(5), default='ru')
+    ref_revenue = Column(Numeric(10, 2), default=0)  # Новая колонка
 
+    # Связь с приглашающим пользователем
     inviter = relationship("User", remote_side=[telegram_id], foreign_keys=[invited_by])
 
 

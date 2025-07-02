@@ -26,6 +26,7 @@ LEXICON = {
         "close_button": "Закрыть",
         "tonkeep": "💸Перейти в Tonkeeper",
         "transfer_nft_button": "📦 Передать NFT",
+        "give_me_money":"💸Вывести TON",
         "russian": "🇷🇺Русский",
         "english": "🇺🇸English",
         "menu_message":     '🤙 И вы до сих пор в <b>Mivelon Guarantor</b>, наш бот - это:\n\n'
@@ -155,6 +156,7 @@ LEXICON = {
         "close_button": "Close",
         "transfer_nft_button": "📦 Transfer NFT",
         "tonkeep": "💸Go to Tonkeeper",
+        "give_me_money": "💸Withdraw TON",
         "russian": "🇷🇺Russian",
         "english": "🇺🇸English",
         # Полностью переведённые ключи с сохранением форматирования

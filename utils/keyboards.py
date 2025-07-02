@@ -123,6 +123,15 @@ def create_back_to_wallets_keyboard(user_lang: str = 'en') -> InlineKeyboardMark
         ]
     ])
 
+def back_to_menu_from_ref_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=get_text('wallet_button', user_lang), callback_data="wallet"),
+            InlineKeyboardButton(text=get_text('give_me_money', user_lang), callback_data="money_ref"),
+        ],
+        [InlineKeyboardButton(text=get_text('back_to_menu', user_lang), callback_data="back_to_menu")]
+    ])
+
 def deal_address_keyboard_seller(user_lang: str = 'en') -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="role_seller")],
