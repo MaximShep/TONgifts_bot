@@ -126,7 +126,8 @@ LEXICON = {
         "wallet_selection_error": "❌Ошибка выбора кошелька",
         "confirm_wallet_deletion": "😕Удалить кошелек?\n\n{wallet}",
         "success_delete": "✅ Кошелек удален!",
-        "already_full": "Ой, а тут уже все есть"
+        "already_full": "Ой, а тут уже все есть",
+        "canceled": "Сделка была отменена!"
 
         # ... остальные ключи
     },
@@ -268,7 +269,8 @@ LEXICON = {
         "wallet_selection_error": "❌ Wallet selection error",
         "confirm_wallet_deletion": "😕Delete wallet?\n\n{wallet}",
         "success_delete": "✅ Wallet deleted!",
-        "already_full": "Oops, everything's already here"
+        "already_full": "Oops, everything's already here",
+        "canceled": "The deal has been cancelled!"
     }
 
         # ... остальные ключи

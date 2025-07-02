@@ -203,7 +203,7 @@ async def process_create_deal_callback(callback: CallbackQuery):
     Обрабатывает нажатие кнопки "Создать сделку" и вызывает логику команды /create_deal.
     """
     await callback.answer()  # Подтверждаем получение запроса
-    await callback.message.delete()  # Удаляем сообщение с кнопкой (опционально)
+
     user_id = callback.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)  # # Ваша функция получения языка
     await callback.message.answer_photo(
@@ -484,6 +484,14 @@ async def _join_deal(message: Message, state: FSMContext, hex_id: str):
         await message.answer_photo(
             photo=FSInputFile("assets/error.png"),
             caption=get_text('already_full', user_lang)
+        )
+        return
+
+    if deal.status == 'canceled' or deal.status == 'time_out':
+        user_lang = get_user_language(message.from_user.id)
+        await message.answer_photo(
+            photo=FSInputFile("assets/error.png"),
+            caption=get_text('canceled', user_lang)
         )
         return
 

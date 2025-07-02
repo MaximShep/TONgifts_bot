@@ -26,6 +26,13 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
         await callback.answer(get_text('deal_not_found', user_lang))
         return
 
+    if deal.status == 'canceled' or deal.status == 'time_out':
+        user_lang = get_user_language(callback.message.from_user.id)
+        await callback.message.answer(
+            caption=get_text('canceled', user_lang)
+        )
+        return
+
     telegram_id = callback.from_user.id
     user_lang = get_user_language(telegram_id)
 
