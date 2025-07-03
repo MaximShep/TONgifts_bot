@@ -128,8 +128,23 @@ LEXICON = {
         "confirm_wallet_deletion": "😕Удалить кошелек?\n\n{wallet}",
         "success_delete": "✅ Кошелек удален!",
         "already_full": "Ой, а тут уже все есть",
-        "canceled": "Сделка была отменена!"
-
+        "canceled": "Сделка была отменена!",
+        "invalid_link_format": "❌Неверный формат ссылки",
+        "invalid_referral_link": "❌Неверная реферальная ссылка",
+        "new_referral": "🤙У вас новый реферал @{username}!",
+        "referral_program": (
+            "🤝РЕФЕРАЛЬНАЯ программа, ваша ссылка:\n\n"
+            "<code>{link}</code>\n\n"
+            "🔘Количество приведенных пользователей: <u><b>{count}</b></u>\n"
+            "🔘Заработано: <u><b>{revenue}</b></u>\n"
+            "<blockquote>{commission}% с комиссии бота со сделок рефералов</blockquote>\n\n"
+            "💳Активный кошелек: \n<i>{active_wallet}</i>\n"
+            "<blockquote>Вывести средства можно только от <u>1 TON</u></blockquote>"
+        ),
+        "payout_success": "Средства выведены на {wallet}",
+        "insufficient_funds": "Недостаточно TON для вывода",
+        "add_wallet_first": "Добавьте кошелек для вывода средств",
+        "no_wallets": "Добавьте кошелек"
         # ... остальные ключи
     },
     "EN": {
@@ -272,7 +287,23 @@ LEXICON = {
         "confirm_wallet_deletion": "😕Delete wallet?\n\n{wallet}",
         "success_delete": "✅ Wallet deleted!",
         "already_full": "Oops, everything's already here",
-        "canceled": "The deal has been cancelled!"
+        "canceled": "The deal has been cancelled!",
+        "invalid_link_format": "❌Invalid link format",
+        "invalid_referral_link": "❌Invalid referral link",
+        "new_referral": "🤙You have a new referral @{username}!",
+        "referral_program": (
+            "🤝Referral program, your link:\n\n"
+            "<code>{link}</code>\n\n"
+            "🔘Referrals invited: <u><b>{count}</b></u>\n"
+            "🔘Earned: <u><b>{revenue}</b></u>\n"
+            "<blockquote>{commission}% from bot's fee from referral deals</blockquote>\n\n"
+            "💳Active wallet: <i>{active_wallet}</i>\n"
+            "<blockquote>Minimum payout is <u>1 TON</u></blockquote>"
+        ),
+        "payout_success": "Funds sent to {wallet}",
+        "insufficient_funds": "Insufficient balance for payout",
+        "add_wallet_first": "Add a wallet to receive payouts",
+        "no_wallets": "No wallets added"
     }
 
         # ... остальные ключи

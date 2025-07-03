@@ -42,6 +42,7 @@ class BuyerStates(StatesGroup):
     wait_payment = State()  # Новое состояние для перехода к оплате
     wait_payment_confirmation = State()  # Ожидание подтверждения
 
+
 @router.message(CommandStart(deep_link=True))
 async def handle_deep_link(message: Message, state: FSMContext, command: CommandStart):
     """
@@ -65,33 +66,41 @@ async def handle_deep_link(message: Message, state: FSMContext, command: Command
 
     else:
         # Обработка неизвестного формата
-        await message.answer("Неверный формат ссылки")
+        user_lang = get_user_language(message.from_user.id)
+        await message.answer(get_text('invalid_link_format', user_lang))
+
 
 async def handle_referral(message: Message, inviter_id: int):
     """Обрабатывает регистрацию по реферальной ссылке"""
     user_id = message.from_user.id
     user = session.query(User).filter_by(telegram_id=user_id).first()
     user_lang = get_user_language(user_id)
+
     if not user:
         # Проверяем, существует ли пригласитель
         inviter = session.query(User).filter_by(telegram_id=inviter_id).first()
+
         if not inviter:
-            await message.answer("Неверная реферальная ссылка")
+            await message.answer(get_text('invalid_referral_link', user_lang))
             return
+
         # Сохраняем пользователя с указанием пригласителя
         save_or_update_user(
             telegram_id=user_id,
             username=message.from_user.username,
             inviter_id=inviter_id
         )
+
+        inviter_lang = get_user_language(inviter_id)
         await message.bot.send_message(
             chat_id=inviter_id,
-            text=f"У вас новый реферал {message.from_user.username}!",
+            text=get_text('new_referral', inviter_lang).format(username=message.from_user.username),
             parse_mode=ParseMode.HTML,
-            reply_markup=close_keyboard(get_user_language(inviter_id))
+            reply_markup=close_keyboard(inviter_lang)
         )
+
     await message.answer_photo(
-        photo=FSInputFile("assets/startCover.png"),  # Замените на вашу ссылку или file_id [[1]]
+        photo=FSInputFile("assets/startCover.png"),
         caption=get_text('welcome_message', user_lang),
         parse_mode=ParseMode.HTML,
         reply_markup=create_welcome_keyboard(user_lang)
