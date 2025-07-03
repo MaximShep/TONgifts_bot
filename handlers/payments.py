@@ -6,12 +6,16 @@ from aiogram.enums import ParseMode
 from handlers.deals import BuyerStates
 from locales import get_text
 from ton_service import TonService
-from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username
+from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username, \
+    add_referral_revenue, revenue_update
 from utils.keyboards import create_payment_keyboard, close_keyboard, \
     transfer_nft, create_back_to_menu_keyboard, support_button  # Если нужна клавиатура для других действий
 from config import Config
 from utils.nft_checker import check_nft_owner
 import asyncio
+from database.repository import session  # Для доступа к сессии
+from database.models import User  # Для работы с моделью User
+
 
 router = Router()
 ton_service = TonService()
@@ -152,9 +156,36 @@ async def finalize_deal(callback: CallbackQuery, deal):
         reply_markup=create_back_to_menu_keyboard(buyer_lang)
     )
     success = await ton_service.transfer_funds(deal.ton_address, deal.price, deal.id)
+    # Ожидаем получения комиссии
+
     if success:
         update_deal_status(deal.id, "completed")
-
+        fee = None
+        while fee is None:
+            fee = await ton_service.find_transaction(deal.id)
+            if fee is None:
+                await asyncio.sleep(5)  # Пауза перед повторной проверкой
+            else:
+                fee = fee / (10 ** 9)
+        buyer = session.query(User).filter_by(telegram_id=deal.buyer_id).first()
+        seller = session.query(User).filter_by(telegram_id=deal.seller_id).first()
+        print(fee)
+        if buyer.invited_by is not None and seller.invited_by is not None:
+            referal_sum = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION)/2
+            our_revenue = deal.comission_price -fee- (referal_sum*2)
+            add_referral_revenue(deal.buyer_id, referal_sum)
+            add_referral_revenue(deal.seller_id, referal_sum)
+        elif buyer.invited_by is not None:
+            referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION
+            our_revenue = deal.comission_price - fee - referal_sum
+            add_referral_revenue(deal.buyer_id, referal_sum)
+        elif seller.invited_by is not None:
+            referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION
+            our_revenue = deal.comission_price - fee - referal_sum
+            add_referral_revenue(deal.seller_id, referal_sum)
+        else:
+            our_revenue = deal.comission_price - fee
+        revenue_update(deal.id, our_revenue)
         await callback.message.bot.send_message(
             chat_id=deal.seller_id,
             text=get_text('deal_completed_seller', seller_lang).format(price=deal.price,link="https://t.me/mivelon_info"),

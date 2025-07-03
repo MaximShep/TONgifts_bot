@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.filters import Command
 from docs.conf import language
 
-from handlers import deals, payments, wallets, language
+from handlers import deals, payments, wallets, language, referal
 from state_middleware import StateMiddleware
 from config import Config  # Импорт класса Config из config.py [[10]]
 from ton_service import TonService
@@ -32,6 +32,8 @@ dp.include_router(wallets.router)
 dp.include_router(deals.router)
 dp.include_router(payments.router)
 dp.include_router(language.router)
+dp.include_router(referal.router)
+
 
 # Настройка планировщика ПОСЛЕ инициализации бота
 

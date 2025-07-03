@@ -39,7 +39,7 @@ class User(Base):
     last_activity = Column(DateTime, default=datetime.utcnow)
     dop_column = Column(JSON, default=lambda: {})
     language = Column(String(5), default='ru')
-    ref_revenue = Column(Numeric(10, 2), default=0)  # Новая колонка
+    ref_revenue = Column(Float, default=0.0)  # Новая колонка
 
     # Связь с приглашающим пользователем
     inviter = relationship("User", remote_side=[telegram_id], foreign_keys=[invited_by])

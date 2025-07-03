@@ -216,6 +216,13 @@ def exit_deal(hex_id, user_id: int) -> int | None:
 
     session.commit()
     return remaining_id
+def revenue_update(hex_id, revenue: float):
+    """добавляет наш доход"""
+    deal = session.query(Deal).filter_by(id=hex_id).first()
+    if not deal:
+        return
+    deal.revenue = revenue
+    session.commit()
 def get_username(telegram_id: int) -> InstrumentedAttribute | None:
     user = session.query(User).filter_by(telegram_id=telegram_id).first()
     return user.username

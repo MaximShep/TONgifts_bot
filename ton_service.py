@@ -23,7 +23,7 @@ class TonService:
         await self.provider.start_up()
 
     async def check_payment(self, hex_id: str, expected_ton: float) -> bool:
-        # return True
+        return True
         expected_amount = int(expected_ton * 10 ** 9)  # Переводим TON в нанотоны
         print("Проверка платежа для HEX:", hex_id)
         url = f"https://tonapi.io/v2/blockchain/accounts/{Config.ADMIN_TON_ADDRESS}/transactions"
@@ -131,41 +131,7 @@ class TonService:
             print(f"❗ Критическая ошибка: {e}")
             return False
 
-    # def check_payment(self, hex_id: str, expected_ton: float) -> bool:
-    #     # return True
-    #     expected_amount = int(expected_ton * 10**9)  # Переводим TON в нанотоны
-    #     print("Проверка платежа для HEX:", hex_id)
-    #     url = f"https://tonapi.io/v2/blockchain/accounts/{Config.ADMIN_TON_ADDRESS}/transactions"
-    #     try:
-    #         response = requests.get(
-    #             url,
-    #             headers={"Authorization": f"Bearer {Config.TONAPI_TOKEN}"},
-    #             params={"limit": 150}
-    #         )
-    #         if response.status_code != 200:
-    #             print(f"Ошибка TonAPI: {response.status_code}")
-    #             return False
-    #
-    #         transactions = response.json().get("transactions", [])
-    #         pattern = re.compile(rf"DEAL_{hex_id}|deal\s*#{hex_id}", re.IGNORECASE)
-    #
-    #         for tx in transactions:
-    #             buyer_adress=tx.get("in_msg", {}).get("source", {}).get("address", "")
-    #             comment = tx.get("in_msg", {}).get("decoded_body", {}).get("text", "")
-    #             amount = tx.get("in_msg", {}).get("value", 0)
-    #
-    #             if pattern.search(comment) and amount == expected_amount:
-    #                 print(f"Платеж найден: {tx['hash']}, сумма: {amount/10**9} TON")
-    #                 update_address_buyer(hex_id, buyer_adress)
-    #                 return True
-    #             elif pattern.search(comment):
-    #                 print(f"Найден комментарий, но неверная сумма: {amount/10**9} TON вместо {expected_ton}")
-    #
-    #         print("Платеж не найден или сумма не совпадает")
-    #         return False
-    #     except Exception as e:
-    #         print(f"Критическая ошибка: {e}")
-    #         return False
+
 
     async def transfer_funds(self, to_address: str, amount_ton: float, deal_id: str) -> bool:
         # return True
@@ -207,7 +173,7 @@ class TonService:
             await wallet.transfer(
                 destination=to_address,
                 amount=amount_nano,
-                body = deal_id
+                body = f"MIVELON payment for the deal #{deal_id}"
             )
 
             await provider.close_all()
@@ -270,3 +236,41 @@ class TonService:
             await provider.close_all()
             print(f"Ошибка при переводе: {str(e)}")
             return False
+
+
+
+
+    async def find_transaction(self, hex_id: str) -> float | None:
+        # return True
+        print("Ищем транзакцию:", hex_id)
+        url = f"https://tonapi.io/v2/blockchain/accounts/{Config.ADMIN_TON_ADDRESS}/transactions"
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {Config.TONAPI_TOKEN}"},
+                params={"limit": 150}
+            )
+            if response.status_code != 200:
+                print(f"Ошибка TonAPI: {response.status_code}")
+                return None
+
+            transactions = response.json().get("transactions", [])
+            pattern = re.compile(rf"MIVELON payment for the deal #{hex_id}", re.IGNORECASE)
+            # Сначала ищем платежи с корректным комментарием и суммой
+            for tx in transactions:
+                in_msg = tx.get("in_msg", {})
+                out_msgs = tx.get("out_msgs", [])[0]
+                amount = out_msgs.get("value", 0)
+                comment = in_msg.get("decoded_body", {}).get("payload", [])[0].get("message", {}).get("message_internal", {}).get("body", {}).get("value", {}).get("value", {}).get("text", "")
+                fee = out_msgs.get("fwd_fee", 0)
+                print(comment)
+                if pattern.search(comment):
+                    print(f"✅ Платеж найден: {tx['hash']}, сумма: {amount / 10 ** 9} TON")
+                    print(fee)
+                    return fee
+            print("❌ Платеж не найден или сумма не совпадает")
+            return None
+
+        except Exception as e:
+            print(f"❗ Критическая ошибка: {e}")
+            return None

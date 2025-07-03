@@ -242,7 +242,7 @@ async def process_create_deal_callback(callback: CallbackQuery):
     Обрабатывает нажатие кнопки "Создать сделку" и вызывает логику команды /create_deal.
     """
     await callback.answer()  # Подтверждаем получение запроса
-
+    await callback.message.delete()  # Удаляем текущее сообщение
     user_id = callback.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)  # # Ваша функция получения языка
     await callback.message.answer_photo(

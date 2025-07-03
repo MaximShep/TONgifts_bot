@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from database.repository import session, get_referral_count, get_referral_revenue, \
@@ -27,9 +29,9 @@ async def process_referral(callback: CallbackQuery):
     wallets = user.wallets if user else []
     count_of_referrals = get_referral_count(user_id)
     revenue = get_referral_revenue(user_id)
-    text=f"РЕФЕРАЛЬНАЯ программа, ваша ссылка:\n\n<code>{link}</code>\n\nКоличество приведенных пользователей: <u><b>{count_of_referrals}</b></u>\nЗаработано: <u><b>{revenue}</b></u>\n<blockquote>20% с комиссии бота</u></blockquote>\n\nАктивный кошелек:<i>{"Добавьте кошелек" if not wallets else user.active_wallet}</i>\n<blockquote>Вывести средства на активный адрес можно только от <u>1 TON</u></blockquote>"
+    text=f"РЕФЕРАЛЬНАЯ программа, ваша ссылка:\n\n<code>{link}</code>\n\nКоличество приведенных пользователей: <u><b>{count_of_referrals}</b></u>\nЗаработано: <u><b>{revenue}</b></u>\n<blockquote>{Config.REFERAL_COMMISSION*100}% с комиссии бота</blockquote>\n\nАктивный кошелек: <i>{"Добавьте кошелек" if not wallets else user.active_wallet}</i>\n<blockquote>Вывести средства на активный адрес можно только от <u>1 TON</u></blockquote>"
     await callback.message.answer_photo(
-        photo=FSInputFile("assets/menu.png"),
+        photo=FSInputFile("assets/referal.png"),
         caption=text,
         parse_mode=ParseMode.HTML,
         reply_markup=back_to_menu_from_ref_keyboard(user_lang)
@@ -43,7 +45,9 @@ async def give_me_my_refs(callback: CallbackQuery):
     user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
     wallets = user.wallets if user else []
     if user.ref_revenue >=1 and wallets !=[]:
-        # await TonService.refund_payment(user.active_wallet, user.ref_revenue)
+        print(user.ref_revenue)
+        await ton_service.refund_payment(user.active_wallet, user.ref_revenue)
+        # await asyncio.sleep(5)  # Пауза перед повторной проверкой
         reset_referral_revenue(callback.from_user.id)
         await callback.answer(f"Средства выведены на {user.active_wallet}", show_alert=True)
     elif user.ref_revenue <1:
