@@ -206,7 +206,8 @@ class TonService:
 
             await wallet.transfer(
                 destination=to_address,
-                amount=amount_nano
+                amount=amount_nano,
+                body = deal_id
             )
 
             await provider.close_all()

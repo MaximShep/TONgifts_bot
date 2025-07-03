@@ -103,7 +103,11 @@ async def process_payment(callback: CallbackQuery, deal):
 
     username = get_username(deal.buyer_id)
 
-    await callback.message.answer(get_text('payment_confirmed', user_lang))
+    await callback.message.answer(
+        get_text('payment_confirmed', user_lang),
+        parse_mode = ParseMode.HTML,
+
+    )
     await callback.message.bot.send_message(
         chat_id=deal.seller_id,
         text=get_text('payment_received_notification', user_lang).format(username=username),

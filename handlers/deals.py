@@ -197,31 +197,7 @@ async def go_menu(callback: CallbackQuery):
 async def close_action(callback: CallbackQuery):
     await callback.message.delete()  # Удаляем текущее сообщение
 
-#РАЗДЕЛ С РЕФЕРАЛАМИ
-@router.callback_query(F.data == "referral")
-async def process_referral(callback: CallbackQuery):
-    await callback.message.delete()  # Удаляем сообщение
-    user_id = callback.from_user.id  # Получаем ID из callback
-    user_lang = get_user_language(user_id)
-    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
-    link=f"https://t.me/{Config.BOT_USERNAME}?start=ref_{encode_telegram_id(user_id)}"
-    count_of_referrals = get_referral_count(user_id)
-    revenue = get_referral_revenue(user_id)
-    text=f"РЕФЕРАЛЬНАЯ программа, ваша ссылка:\n\n<code>{link}</code>\n\nКоличество приведенных пользователей: <u><b>{count_of_referrals}</b></u>\nЗаработано: <u><b>{revenue}</b></u>\n\nАктивный кошелек:\n<i>{user.active_wallet}</i>\n<blockquote>Вывести средства на активный адрес можно только от <u>1 TON</u></blockquote>"
-    await callback.message.answer_photo(
-        photo=FSInputFile("assets/menu.png"),
-        caption=text,
-        parse_mode=ParseMode.HTML,
-        reply_markup=back_to_menu_from_ref_keyboard(user_lang)
-    )
-#Вывод средств
-@router.callback_query(F.data == "money_ref")
-async def give_me_my_refs(callback: CallbackQuery):
-    user_lang = get_user_language(callback.from_user.id)
-    user = session.query(User).filter_by(telegram_id=callback.from_user.id).first()
-    reset_referral_revenue(callback.from_user.id)
-    await callback.answer(f"Средства выведены на {user.active_wallet}", show_alert=True)
-    await go_menu(callback)
+
 
 # СОЗДАНИЕ СДЕЛКИ
 
