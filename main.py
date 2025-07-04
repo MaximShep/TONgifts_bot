@@ -47,6 +47,7 @@ async def daily_report_task():
 
         # Устанавливаем целевое время: сегодня в 23:59 MSK
         next_run_msk = now_msk.replace(hour=23, minute=59, second=0, microsecond=0)
+        # next_run_msk = now_msk.replace(hour=now_msk.hour, minute=now_msk.minute + 1, second=0, microsecond=0)
         # Если время уже прошло — переносим на завтра
         if now_msk >= next_run_msk:
             next_run_msk += timedelta(days=1)
