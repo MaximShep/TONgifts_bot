@@ -77,7 +77,7 @@ async def handle_referral(message: Message, inviter_id: int):
     user_lang = get_user_language(user_id)
 
     user1 = message.from_user
-    if not user1.username:
+    if user1.username == None:
         await message.answer(
             "❌ Для использования этого бота вам необходимо установить username (имя пользователя) в настройках Telegram."
         )
@@ -138,7 +138,7 @@ async def cmd_start(message: Message):
     """
 
     user = message.from_user
-    if not user.username:
+    if user.username == None:
         await message.answer(
             "❌ Для использования этого бота вам необходимо установить username (имя пользователя) в настройках Telegram."
         )
