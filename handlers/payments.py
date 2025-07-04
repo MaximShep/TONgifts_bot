@@ -2,12 +2,14 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from aiogram.enums import ParseMode
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from aiogram.exceptions import TelegramBadRequest
 
 from handlers.deals import BuyerStates
 from locales import get_text
 from ton_service import TonService
 from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username, \
-    add_referral_revenue, revenue_update, update_last_activity
+    add_referral_revenue, revenue_update, update_last_activity, get_deal_by_hex
 from utils.keyboards import create_payment_keyboard, close_keyboard, \
     transfer_nft, create_back_to_menu_keyboard, support_button  # Если нужна клавиатура для других действий
 from config import Config
@@ -211,6 +213,50 @@ async def finalize_deal(callback: CallbackQuery, deal):
             text=get_text("transfer_money_error", seller_lang),
             reply_markup = support_button(seller_lang)
         )
+
+        keyboard_transfererror = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="✅ Завершить сделку", callback_data=f"refresh_transfererror_{deal.id}")]
+        ])
+        await callback.message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Сделка #{deal.id} ошибка перевода!</b>\n\n"
+                 f"🛍️ NFT: {deal.gift_name[0]}\n"
+                 f"💰 Цена (без комиссии): {deal.price} TON\n\n"
+                 f"Продавец: @{get_username(deal.seller_id)} [{deal.seller_id}]\n"
+                 f"Покупатель: @{get_username(deal.buyer_id)} [{deal.buyer_id}]\n\n"
+                 f"<b>💰 Сумма сделки (c скомиссией): {deal.comission_price} TON</b>",
+            message_thread_id=186,
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard_transfererror
+        )
+
+        @router.callback_query(F.data.startswith("refresh_transfererror_"))
+        async def refresh_transfererror_handler(callback: CallbackQuery):
+            deal_id = callback.data.split("_")[-1]
+
+            # Получаем актуальные данные сделки
+            deal = get_deal_by_hex(deal_id)
+            update_deal_status(deal_id, 'completed')
+            updated_text = (
+                f"<b>Сделка #{deal.id} завершена!</b>\n\n"
+                f"🛍️ NFT: {deal.gift_name[0]}\n"
+                f"💰 Цена (без комиссии): {deal.price} TON\n\n"
+                f"Продавец: @{get_username(deal.seller_id) if deal.seller_id is not None else '—'} [{deal.seller_id if deal.seller_id is not None else '—'}]\n"
+                f"Покупатель: @{get_username(deal.buyer_id) if deal.buyer_id is not None else '—'} [{deal.buyer_id if deal.buyer_id is not None else '—'}]\n\n"
+                f"<b>💰 Сумма сделки (c комиссией): {deal.comission_price} TON</b>"
+            )
+            try:
+                if callback.message.text != updated_text or callback.message.reply_markup != callback.message.reply_markup:
+                    await callback.message.edit_text(
+                        text=updated_text,
+                        parse_mode=ParseMode.HTML
+                    )
+            except TelegramBadRequest as e:
+                if "message is not modified" in e.message:
+                    pass
+                else:
+                    raise
+            await callback.answer()
 
 # from aiogram import Router, F
 # import asyncio
