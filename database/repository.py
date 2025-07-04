@@ -158,6 +158,11 @@ def update_user_language(telegram_id: int, language: str):
         session.add(new_user)
         session.commit()
 
+async def update_last_activity(user_id: int):
+    user = session.query(User).filter_by(telegram_id=user_id).first()
+    user.last_activity = datetime.utcnow()
+    session.commit()
+
 def create_refund(
     deal_id: str,                # HEX как строка
     wallet_address: str,
@@ -185,6 +190,7 @@ def get_active_deals():
 def get_userbuyer_deals(telegram_id: int):
     return session.query(Deal).filter(
         Deal.buyer_id == telegram_id,
+        Deal.status == 'completed'
     ).all()
 
 def get_userseller_deals(telegram_id: int):
@@ -223,6 +229,7 @@ def revenue_update(hex_id, revenue: float):
         return
     deal.revenue = revenue
     session.commit()
+
 def get_username(telegram_id: int) -> InstrumentedAttribute | None:
     user = session.query(User).filter_by(telegram_id=telegram_id).first()
     return user.username
@@ -271,3 +278,4 @@ def reset_referral_revenue(telegram_id: int) -> None:
             .filter_by(telegram_id=telegram_id)\
             .update({User.ref_revenue: '0.0'})
         session.commit()
+

@@ -7,7 +7,7 @@ from handlers.deals import BuyerStates
 from locales import get_text
 from ton_service import TonService
 from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username, \
-    add_referral_revenue, revenue_update
+    add_referral_revenue, revenue_update, update_last_activity
 from utils.keyboards import create_payment_keyboard, close_keyboard, \
     transfer_nft, create_back_to_menu_keyboard, support_button  # Если нужна клавиатура для других действий
 from config import Config
@@ -39,6 +39,7 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
 
     telegram_id = callback.from_user.id
     user_lang = get_user_language(telegram_id)
+    await update_last_activity(telegram_id)
 
     amount = deal.comission_price
     comment = f"DEAL_{deal.id}"

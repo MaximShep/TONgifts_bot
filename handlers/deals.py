@@ -15,7 +15,7 @@ from utils.hex_generator import generate_hex_id
 from database.repository import save_deal, get_deal_by_hex, update_deal_buyer, save_or_update_user, update_deal_seller, \
     update_ton_address, add_user_wallet, set_active_wallet, get_user_language, update_user_language, check_status, \
     exit_deal, get_username, is_new_user, get_user_by_id, get_userbuyer_deals, get_userseller_deals, get_referral_count, \
-    get_referral_revenue, reset_referral_revenue
+    get_referral_revenue, reset_referral_revenue, update_last_activity
 from config import Config
 from aiogram.types import FSInputFile  # Для локальных файлов [[3]]
 from dotenv import load_dotenv
@@ -91,6 +91,17 @@ async def handle_referral(message: Message, inviter_id: int):
             inviter_id=inviter_id
         )
 
+        keyboard_admin_users = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🔄 Обновить", callback_data=f"refresh_user_{message.from_user.id}")]
+        ])
+        await message.bot.send_message(
+            chat_id=-1002751170506,
+            text=f"<b>Новый пользователь @{get_username(message.from_user.id)} [{message.from_user.id}]</b>",
+            message_thread_id = 25,
+            parse_mode=ParseMode.HTML,
+            reply_markup=keyboard_admin_users
+        )
+
         inviter_lang = get_user_language(inviter_id)
         await message.bot.send_message(
             chat_id=inviter_id,
@@ -156,6 +167,7 @@ async def cmd_start(message: Message):
 async def menu_text(message: Message):
     user_id = message.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)
+    await update_last_activity(user_id)
 
     if is_new_user(telegram_id=message.from_user.id):
         save_or_update_user(
@@ -194,6 +206,7 @@ async def go_menu(callback: CallbackQuery):
     await callback.message.delete()  # Удаляем текущее сообщение
     user_id = callback.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)
+    await update_last_activity(user_id)
     await callback.message.answer_photo(
         photo=FSInputFile("assets/menu.png"),
         caption=get_text('menu_message', user_lang),
@@ -254,6 +267,7 @@ async def process_create_deal_callback(callback: CallbackQuery):
     await callback.message.delete()  # Удаляем текущее сообщение
     user_id = callback.from_user.id  # Получаем ID из callback
     user_lang = get_user_language(user_id)  # # Ваша функция получения языка
+    await update_last_activity(user_id)
     await callback.message.answer_photo(
         photo=FSInputFile("assets/choose.png"),
         caption=get_text('role_selection', user_lang),
@@ -267,6 +281,7 @@ async def process_buyer_role(callback: CallbackQuery, state: FSMContext):
     await state.update_data(id="")
     telegram_id = callback.from_user.id
     user_lang = get_user_language(telegram_id)
+    await update_last_activity(telegram_id)
     await callback.message.delete()  # Удаляем сообщение
     await callback.message.answer_photo(
         photo=FSInputFile("assets/link.png"),
@@ -914,18 +929,25 @@ async def refresh_user_handler(callback: CallbackQuery):
         f"Сделок в роли покупателя: {len(get_userseller_deals(user_id))}\n\n"
         f"<b>Всего сделок {len(get_userbuyer_deals(user_id)) + len(get_userseller_deals(user_id))}</b>\n"
         f"Активный кошелек: {user.active_wallet if user.active_wallet else '-'}\n\n"
+        f"Количество рефервлов: {user.active_wallet if user.active_wallet else '-'}\n"
         f"<i>Дата регистрации: {user.created_at}</i>\n"
         f"<i>Последняя активность: {user.last_activity}</i>"
     )
 
     # Редактируем сообщение
-    if callback.message.text != updated_text or callback.message.reply_markup != callback.message.reply_markup:
+    try:
+        if callback.message.text != updated_text or callback.message.reply_markup != callback.message.reply_markup:
 
-        await callback.message.edit_text(
-            text=updated_text,
-            parse_mode=ParseMode.HTML,
-            reply_markup=callback.message.reply_markup  # Оставляем кнопку
-        )
+            await callback.message.edit_text(
+                text=updated_text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=callback.message.reply_markup  # Оставляем кнопку
+            )
+    except TelegramBadRequest as e:
+        if "message is not modified" in e.message:
+            pass
+        else:
+            raise
 
     await callback.answer()
 
