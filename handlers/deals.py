@@ -929,7 +929,7 @@ async def refresh_user_handler(callback: CallbackQuery):
         f"Сделок в роли покупателя: {len(get_userseller_deals(user_id))}\n\n"
         f"<b>Всего сделок {len(get_userbuyer_deals(user_id)) + len(get_userseller_deals(user_id))}</b>\n"
         f"Активный кошелек: {user.active_wallet if user.active_wallet else '-'}\n\n"
-        f"Количество рефервлов: {user.active_wallet if user.active_wallet else '-'}\n"
+        f"Количество рефервлов: {get_referral_count(user_id)}\n"
         f"<i>Дата регистрации: {user.created_at}</i>\n"
         f"<i>Последняя активность: {user.last_activity}</i>"
     )
