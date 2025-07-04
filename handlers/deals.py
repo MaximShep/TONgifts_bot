@@ -76,6 +76,13 @@ async def handle_referral(message: Message, inviter_id: int):
     user = session.query(User).filter_by(telegram_id=user_id).first()
     user_lang = get_user_language(user_id)
 
+    user1 = message.from_user
+    if not user1.username:
+        await message.answer(
+            "❌ Для использования этого бота вам необходимо установить username (имя пользователя) в настройках Telegram."
+        )
+        return  # Прерываем выполнение, не пускаем дальше
+
     if not user:
         # Проверяем, существует ли пригласитель
         inviter = session.query(User).filter_by(telegram_id=inviter_id).first()
@@ -129,6 +136,14 @@ async def cmd_start(message: Message):
     """
     Приветственное сообщение с кнопкой [[1]]
     """
+
+    user = message.from_user
+    if not user.username:
+        await message.answer(
+            "❌ Для использования этого бота вам необходимо установить username (имя пользователя) в настройках Telegram."
+        )
+        return  # Прерываем выполнение, не пускаем дальше
+
     user_lang = get_user_language(message.from_user.id)  # Ваша функция получения языка
 
     if is_new_user(telegram_id=message.from_user.id):
