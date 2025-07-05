@@ -117,6 +117,30 @@ def add_user_wallet(telegram_id: int, wallet_address: str):
                 user.active_wallet = wallet_address  # Автоматически делаем новый кошелек активным
         session.commit()
 
+def add_vip(telegram_id: int):
+    with Session() as session:  # Создаем новую сессию
+        user = session.query(User).filter_by(telegram_id=telegram_id).first()
+        user.dop_column = ['vip']
+        session.commit()
+
+def is_user_vip(telegram_id):
+    user = session.query(User).filter_by(telegram_id=telegram_id).first()
+    if user and 'vip' in user.dop_column:
+        return True
+    return False
+
+def remove_vip_from_user(telegram_id):
+    with Session() as session:
+        user = session.query(User).filter_by(telegram_id=telegram_id).first()
+        if user and 'vip' in user.dop_column:
+            user.dop_column = []
+            session.commit()
+            return True
+        return False
+
+def get_vip_users():
+    return session.query(User).filter(User.dop_column.contains(['vip'])).all()
+
 def set_active_wallet(telegram_id: int, wallet_address: str):
     print(f"Активный кошелек {wallet_address} установлен для {telegram_id}")
     user = session.query(User).filter_by(telegram_id=telegram_id).first()

@@ -9,7 +9,7 @@ from handlers.deals import BuyerStates
 from locales import get_text
 from ton_service import TonService
 from database.repository import update_deal_status, get_deal_by_id, get_user_language, get_username, \
-    add_referral_revenue, revenue_update, update_last_activity, get_deal_by_hex
+    add_referral_revenue, revenue_update, update_last_activity, get_deal_by_hex, get_vip_users
 from utils.keyboards import create_payment_keyboard, close_keyboard, \
     transfer_nft, create_back_to_menu_keyboard, support_button  # Если нужна клавиатура для других действий
 from config import Config
@@ -174,18 +174,18 @@ async def finalize_deal(callback: CallbackQuery, deal):
         seller = session.query(User).filter_by(telegram_id=deal.seller_id).first()
         print(fee)
         if buyer.invited_by is not None and seller.invited_by is not None:
-            if deal.buyer_id in Config.VIP_IDS and deal.seller_id in Config.VIP_IDS:
+            if deal.buyer_id in get_vip_users() and deal.seller_id in get_vip_users():
                 referal_sum = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
                 our_revenue = deal.comission_price -fee- (referal_sum*2)
                 add_referral_revenue(deal.buyer_id, referal_sum)
                 add_referral_revenue(deal.seller_id, referal_sum)
-            elif deal.buyer_id in Config.VIP_IDS and deal.seller_id not in Config.VIP_IDS:
+            elif deal.buyer_id in get_vip_users() and deal.seller_id not in get_vip_users():
                 ref = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
                 ref_vip = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
                 our_revenue = deal.comission_price -fee- (ref + ref_vip)
                 add_referral_revenue(deal.buyer_id, ref_vip)
                 add_referral_revenue(deal.seller_id, ref)
-            elif deal.buyer_id not in Config.VIP_IDS and deal.seller_id in Config.VIP_IDS:
+            elif deal.buyer_id not in get_vip_users() and deal.seller_id in get_vip_users():
                 ref = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
                 ref_vip = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
                 our_revenue = deal.comission_price -fee- (ref + ref_vip)
@@ -197,7 +197,7 @@ async def finalize_deal(callback: CallbackQuery, deal):
                 add_referral_revenue(deal.buyer_id, referal_sum)
                 add_referral_revenue(deal.seller_id, referal_sum)
         elif buyer.invited_by is not None:
-            if deal.buyer_id in Config.VIP_IDS:
+            if deal.buyer_id in get_vip_users():
                 referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP
                 our_revenue = deal.comission_price - fee - referal_sum
                 add_referral_revenue(deal.buyer_id, referal_sum)
@@ -206,7 +206,7 @@ async def finalize_deal(callback: CallbackQuery, deal):
                 our_revenue = deal.comission_price - fee - referal_sum
                 add_referral_revenue(deal.buyer_id, referal_sum)
         elif seller.invited_by is not None:
-            if deal.seller_id in Config.VIP_IDS:
+            if deal.seller_id in get_vip_users():
                 referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP
                 our_revenue = deal.comission_price - fee - referal_sum
                 add_referral_revenue(deal.seller_id, referal_sum)

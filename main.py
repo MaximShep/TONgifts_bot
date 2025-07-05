@@ -13,6 +13,9 @@ from config import Config  # Импорт класса Config из config.py [[1
 from ton_service import TonService
 from utils.scheduler import DealScheduler
 from database.reporting import generate_daily_report, format_report
+from handlers.vip import router as vip_router
+from handlers.vip import send_vip_list
+
 
 # Настройка логирования
 logging.basicConfig(
@@ -35,6 +38,7 @@ dp.include_router(deals.router)
 dp.include_router(payments.router)
 dp.include_router(language.router)
 dp.include_router(referal.router)
+dp.include_router(vip_router)
 
 async def daily_report_task():
     while True:
@@ -84,6 +88,8 @@ async def main():
     await ton_service.initialize()  # Запуск LiteBalancer [[
     await scheduler.start()
     asyncio.create_task(daily_report_task())
+    asyncio.create_task(send_vip_list(bot))
+    # Отправляем начальный список VIP
     await dp.start_polling(bot, skip_updates=True)
 
 if __name__ == "__main__":

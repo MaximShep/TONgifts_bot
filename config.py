@@ -21,6 +21,5 @@ class Config:
     COMMISSION_PERCENT = float(os.getenv("COMMISSION_PERCENT"))  # Комиссия 5%
     REFERAL_COMMISSION = float(os.getenv("REFERAL_COMMISSION"))  # Комиссия 5%
     REFERAL_COMMISSION_VIP = float(os.getenv("REFERAL_COMMISSION_VIP"))
-    VIP_IDS = [int(x) for x in os.getenv("VIP_IDS").split()]
     # PRIVATE_KEY = PRIVATE_KEY
     MNEMONICS = os.getenv("MNEMONICS").split()
