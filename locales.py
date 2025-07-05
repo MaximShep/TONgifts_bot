@@ -144,7 +144,8 @@ LEXICON = {
         "payout_success": "Средства выведены на {wallet}",
         "insufficient_funds": "Недостаточно TON для вывода",
         "add_wallet_first": "Добавьте кошелек для вывода средств",
-        "no_wallets": "Добавьте кошелек"
+        "no_wallets": "Добавьте кошелек",
+        "no_username": "❌ Для использования этого бота вам необходимо установить username (имя пользователя) в настройках Telegram!"
         # ... остальные ключи
     },
     "EN": {
@@ -303,7 +304,8 @@ LEXICON = {
         "payout_success": "Funds sent to {wallet}",
         "insufficient_funds": "Insufficient balance for payout",
         "add_wallet_first": "Add a wallet to receive payouts",
-        "no_wallets": "No wallets added"
+        "no_wallets": "No wallets added",
+        "no_username": "❌ To use this bot, you need to set username in the Telegram settings!"
     }
 
         # ... остальные ключи

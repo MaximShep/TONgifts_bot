@@ -35,13 +35,22 @@ async def process_referral(callback: CallbackQuery):
     count_of_referrals = get_referral_count(user_id)
     revenue = get_referral_revenue(user_id)
 
-    text = get_text('referral_program', user_lang).format(
-        link=link,
-        count=count_of_referrals,
-        revenue=revenue,
-        commission=Config.REFERAL_COMMISSION * 100,
-        active_wallet=user.active_wallet if wallets else get_text('no_wallets', user_lang)
-    )
+    if user_id in Config.VIP_IDS:
+        text = get_text('referral_program', user_lang).format(
+            link=link,
+            count=count_of_referrals,
+            revenue=revenue,
+            commission=Config.REFERAL_COMMISSION_VIP * 100,
+            active_wallet=user.active_wallet if wallets else get_text('no_wallets', user_lang)
+        )
+    else:
+        text = get_text('referral_program', user_lang).format(
+            link=link,
+            count=count_of_referrals,
+            revenue=revenue,
+            commission=Config.REFERAL_COMMISSION * 100,
+            active_wallet=user.active_wallet if wallets else get_text('no_wallets', user_lang)
+        )
 
     await callback.message.answer_photo(
         photo=FSInputFile("assets/referal.png"),

@@ -174,18 +174,46 @@ async def finalize_deal(callback: CallbackQuery, deal):
         seller = session.query(User).filter_by(telegram_id=deal.seller_id).first()
         print(fee)
         if buyer.invited_by is not None and seller.invited_by is not None:
-            referal_sum = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION)/2
-            our_revenue = deal.comission_price -fee- (referal_sum*2)
-            add_referral_revenue(deal.buyer_id, referal_sum)
-            add_referral_revenue(deal.seller_id, referal_sum)
+            if deal.buyer_id in Config.VIP_IDS and deal.seller_id in Config.VIP_IDS:
+                referal_sum = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
+                our_revenue = deal.comission_price -fee- (referal_sum*2)
+                add_referral_revenue(deal.buyer_id, referal_sum)
+                add_referral_revenue(deal.seller_id, referal_sum)
+            elif deal.buyer_id in Config.VIP_IDS and deal.seller_id not in Config.VIP_IDS:
+                ref = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
+                ref_vip = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
+                our_revenue = deal.comission_price -fee- (ref + ref_vip)
+                add_referral_revenue(deal.buyer_id, ref_vip)
+                add_referral_revenue(deal.seller_id, ref)
+            elif deal.buyer_id not in Config.VIP_IDS and deal.seller_id in Config.VIP_IDS:
+                ref = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
+                ref_vip = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP)/2
+                our_revenue = deal.comission_price -fee- (ref + ref_vip)
+                add_referral_revenue(deal.buyer_id, ref)
+                add_referral_revenue(deal.seller_id, ref_vip)
+            else:
+                referal_sum = ((deal.comission_price - fee)*Config.REFERAL_COMMISSION)/2
+                our_revenue = deal.comission_price -fee- (referal_sum*2)
+                add_referral_revenue(deal.buyer_id, referal_sum)
+                add_referral_revenue(deal.seller_id, referal_sum)
         elif buyer.invited_by is not None:
-            referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION
-            our_revenue = deal.comission_price - fee - referal_sum
-            add_referral_revenue(deal.buyer_id, referal_sum)
+            if deal.buyer_id in Config.VIP_IDS:
+                referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP
+                our_revenue = deal.comission_price - fee - referal_sum
+                add_referral_revenue(deal.buyer_id, referal_sum)
+            else:
+                referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION
+                our_revenue = deal.comission_price - fee - referal_sum
+                add_referral_revenue(deal.buyer_id, referal_sum)
         elif seller.invited_by is not None:
-            referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION
-            our_revenue = deal.comission_price - fee - referal_sum
-            add_referral_revenue(deal.seller_id, referal_sum)
+            if deal.seller_id in Config.VIP_IDS:
+                referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION_VIP
+                our_revenue = deal.comission_price - fee - referal_sum
+                add_referral_revenue(deal.seller_id, referal_sum)
+            else:
+                referal_sum = (deal.comission_price - fee)*Config.REFERAL_COMMISSION
+                our_revenue = deal.comission_price - fee - referal_sum
+                add_referral_revenue(deal.seller_id, referal_sum)
         else:
             our_revenue = deal.comission_price - fee
         revenue_update(deal.id, our_revenue)
