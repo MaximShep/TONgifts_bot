@@ -51,15 +51,5 @@ def generate_daily_report(session):
 
 def format_report(report_data):
     """Форматирует отчет в удобный текст"""
-    text = f"📊 <b>Ежедневный отчет — {report_data['date']}</b>\n\n"
-    f"👥 Всего пользователей: {report_data['total_users']}\n"
-    f"<i>Активных за сутки: {report_data['active_users']}</i>\n"
-    f"<i>Новых за сутки: {report_data['new_users']}</i>\n\n"
-
-    f"🤝<b> Всего сделок: {report_data['total_deals']}</b>\n"
-    f"Завершено за сутки: {report_data['completed_deals']}\n"
-    f"Доход за сутки: {report_data['daily_revenue']} TON\n\n"
-
-    f"🎁 Общие доходы рефералов: {report_data['referral_revenue']} TON\n"
-
+    text = f"📊 <b>Ежедневный отчет — {report_data['date']}</b>\n\n👥 Всего пользователей: {report_data['total_users']}\n<i>Активных за сутки: {report_data['active_users']}</i>\n<i>Новых за сутки: {report_data['new_users']}</i>\n\n🤝<b> Всего сделок: {report_data['total_deals']}</b>\nЗавершено за сутки: {report_data['completed_deals']}\nДоход за сутки: {report_data['daily_revenue']} TON\n\n🎁 Общие доходы рефералов: {report_data['referral_revenue']} TON\n"
     return text
