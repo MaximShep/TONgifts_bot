@@ -37,7 +37,7 @@ async def process_language(callback: CallbackQuery):
 async def set_language(callback: CallbackQuery):
     lang = callback.data.split("_")[1].lower()  # Приводим к нижнему регистру
     user_lang = get_user_language(callback.from_user.id)
-    if lang not in ['ru', 'en']:
+    if lang not in ['ru', 'en', 'ar']:
         await callback.answer(get_text('unknown_language', user_lang), show_alert=True)
         return
 

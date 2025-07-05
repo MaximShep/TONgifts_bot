@@ -169,7 +169,8 @@ def create_language_keyboard(user_lang: str = 'en') -> InlineKeyboardMarkup:
     buttons = []
     buttons.append([
         InlineKeyboardButton(text=get_text('russian', user_lang), callback_data="lang_ru"),
-        InlineKeyboardButton(text=get_text('english', user_lang), callback_data="lang_en")
+        InlineKeyboardButton(text=get_text('english', user_lang), callback_data="lang_en"),
+        InlineKeyboardButton(text=get_text('arabian', user_lang), callback_data="lang_ar")
     ])
     buttons.append([InlineKeyboardButton(text=get_text('back_button', user_lang), callback_data="back_to_menu")])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
