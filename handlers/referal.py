@@ -3,7 +3,7 @@ import asyncio
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from database.repository import session, get_referral_count, get_referral_revenue, \
-    reset_referral_revenue, get_vip_users  # Для доступа к сессии
+    reset_referral_revenue, is_user_vip  # Для доступа к сессии
 from database.models import User  # Для работы с моделью User
 from config import Config
 from aiogram.enums import ParseMode
@@ -34,8 +34,7 @@ async def process_referral(callback: CallbackQuery):
     wallets = user.wallets
     count_of_referrals = get_referral_count(user_id)
     revenue = get_referral_revenue(user_id)
-
-    if user_id in get_vip_users():
+    if is_user_vip(user_id):
         text = get_text('referral_program', user_lang).format(
             link=link,
             count=count_of_referrals,

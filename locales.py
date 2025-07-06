@@ -30,6 +30,7 @@ LEXICON = {
         "russian": "🇷🇺Русский",
         "english": "🇺🇸English",
         "arabian": "العربية🇦🇪",
+        "chinese": "🇨🇳中文",
         "menu_message":     '🤙 И вы до сих пор в <b>Mivelon Guarantor</b>, наш бот - это:\n\n'
                            "<i>🔘 Безопасные сделки с NFT-подарками\n"
                            "🔘️ Уникальная система управления кошельками\n"
@@ -88,7 +89,6 @@ LEXICON = {
         "select_wallet_first": "⚠️ Сначала выберите кошелек!",
         "wallet_selected": "Активный кошелек: {wallet}",
        "selected_ton_address": "𝟑/𝟒 Выбранный TON-адрес:\n<blockquote><code>{ton_address}</code></blockquote>\n\n🔗 <u>Отправьте ссылку</u> на подарок:",
-       "referral_program": "😭Реферальная программа в разработке",
        "language_selection": "🌏 Выберите язык / Choose language",
         "unknown_language": "🤔Недоступный язык",
         "buyer_enter_gift_link": "𝟐/𝟑 Отправьте ссылку на подарок 🔗",
@@ -177,6 +177,7 @@ LEXICON = {
         "russian": "🇷🇺Russian",
         "english": "🇺🇸English",
         "arabian": "العربية🇦🇪",
+        "chinese": "🇨🇳中文",
         # Полностью переведённые ключи с сохранением форматирования
         "menu_message": '🤙 You\'re still in <b>Mivelon Guarantor</b>, our bot is:\n\n'
                         '<i>🔘 Secure NFT gift deals\n'
@@ -246,8 +247,6 @@ LEXICON = {
         "select_wallet_first": "⚠️ Please select a wallet first!",
         "wallet_selected": "Active wallet: {wallet}",
         "selected_ton_address": "𝟑/𝟒 Selected TON address:\n<blockquote><code>{ton_address}</code></blockquote>\n\n🔗 <u>Send gift link</u>:",
-
-        "referral_program": "😭 Referral program under development",
         "language_selection": "🌏 Select language / Choose language",
         "unknown_language": "🤔 Unsupported language",
         "buyer_enter_gift_link": "𝟐/𝟑 Send gift link 🔗",
@@ -337,6 +336,7 @@ LEXICON = {
         "russian": "🇷🇺 Русский",
         "english": "🇺🇸 English",
         "arabian": "العربية🇦🇪",
+        "chinese": "🇨🇳中文",
         "menu_message": '🤙 ما زلت معنا في <b>Mivelon Guarantor</b>، بوتنا يقدم:\n'
                         "<i>🔘 معاملات آمنة مع هدايا NFT\n"
                         "🔘 نظام إدارة محافظ فريد\n"
@@ -406,7 +406,6 @@ LEXICON = {
         "selected_ton_address": "𝟑/𝟒 العنوان المحدد:\n"
                                 "<blockquote><code>{ton_address}</code></blockquote>\n"
                                 "🔗 <u>أرسل رابط الهدية</u>:",
-        "referral_program": "😭 برنامج الإحالة قيد التطوير",
         "language_selection": "🌏 اختر اللغة / Choose language",
         "unknown_language": "🤔 اللغة غير متاحة",
         "buyer_enter_gift_link": "𝟐/𝟑 أرسل رابط الهدية 🔗",
@@ -434,7 +433,7 @@ LEXICON = {
         "payment_timeout": "⏰ انتهت مدة الدفع. الصفقة ألغيت.",
         "payment_confirmed": "✅ تم تأكيد الدفع! انتظر استلام الهدية...\n"
                              "<blockquote>سيتم تسجيل التحويل تلقائيًا. إذا لم تستلم الهدية خلال 15 دقيقة، سيتم إعادة الأموال</blockquote>",
-        "payment_received_notification": "🎁 تم استلام الدفع من @{username}. قم بنقل الـNFT للمشتري.\n"
+        "payment_received_notification": "🎁 تم استلام الدفع من {username}@. قم بنقل الـNFT للمشتري.\n"
                                          "<blockquote>سيتم تسجيل التحويل تلقائيًا، لديك 15 دقيقة لذلك</blockquote>",
         "payment_timeout_refund": "⏳ الوقت انتهى. نبدأ بإرجاع الأموال...",
         "deal_completed_buyer": "✅ تم استلام NFT! الصفقة اكتملت\n"
@@ -457,7 +456,7 @@ LEXICON = {
         "canceled": "الصفقة ألغيت!",
         "invalid_link_format": "❌ رابط غير صحيح",
         "invalid_referral_link": "❌ رابط إحالة غير صحيح",
-        "new_referral": "🤙 لديك إحالة جديدة @{username}!",
+        "new_referral": "🤙 لديك إحالة جديدة {username}@!",
         "referral_program": (
             "🤝 برنامج الإحالة، رابطك:\n"
             "<code>{link}</code>\n"
@@ -473,6 +472,169 @@ LEXICON = {
         "add_wallet_first": "أضف محفظة لسحب الأموال",
         "no_wallets": "أضف محفظة",
         "no_username": "❌ لاستخدام هذا الروبوت، يجب عليك تعيين اسم مستخدم في إعدادات Telegram!"
+    },
+    "ZH": {
+        "role_seller": "🎁 卖家",
+        "role_buyer": "💸 买家",
+        "back_button": "🔙 返回",
+        "wallet_button": "💸钱包",
+        "referral_button": "🫂推荐系统",
+        "create_deal": "🚀创建交易",
+        "language_button": "🌍语言",
+        "support_button": "🤝支持",
+        "done_button": "完成",
+        "confirm_payment": "确认付款",
+        "start_payment": "去付款",
+        "add_wallet": "➕ 添加",
+        "delete_wallet": "❌ 删除",
+        "back_to_menu": "🔙 菜单",
+        "back_to_wallets": "🔙 钱包列表",
+        "delete_button": "❌ 删除",
+        "cancel_button": "🔙 取消",
+        "cancel_deal": "❌ 取消交易",
+        "proceed_button": "下一步 ➡️",
+        "leave_button": "❌ 离开",
+        "close_button": "关闭",
+        "tonkeep": "💸进入Tonkeeper",
+        "transfer_nft_button": "📦 转移NFT",
+        "give_me_money": "💸 提取TON",
+        "russian": "🇷🇺Русский",
+        "english": "🇺🇸English",
+        "arabian": "العربية🇦🇪",
+        "chinese": "🇨🇳中文",
+        "menu_message": '🤙 您仍然在 <b>Mivelon Guarantor</b>，我们的机器人有：\n'
+                        "<i>🔘 安全的NFT礼物交易\n"
+                        "🔘 独特的钱包管理系统\n"
+                        "🔘 自动验证礼物转移</i>\n"
+                        "创建或加入一笔交易吧\n"
+                        "<blockquote><i>整个7月手续费仅1%</i></blockquote>",
+        "welcome_message": '👋 欢迎来到 <b>Mivelon Guarantor</b>，我们的机器人提供:\n'
+                           "<i>🔘 安全的NFT礼物交易\n"
+                           "🔘 独特的钱包管理系统\n"
+                           "🔘 自动验证礼物转移</i>\n"
+                           "创建或加入一笔交易吧\n"
+                           "<blockquote><i>整个7月手续费仅1%</i></blockquote>",
+        "role_selection": "𝟏 请选择角色\n"
+                          "🔘<b>卖家</b> - 当前礼物的拥有者\n"
+                          "🔘<b>买家</b> - 支付TON的一方\n"
+                          "<blockquote><i>创建交易需要提供<u>NFT礼物链接</u>.</i></blockquote>",
+        "deal_not_found": "找不到该交易，请检查HEX编码。",
+        "already_participant": "您已经是这笔交易的参与者。",
+        "seller_joined": "卖家 @{username} [{user_id}] 加入了本交易!\n"
+                         "🔘 作为卖家的交易数: {userbuyer_deals}\n"
+                         "🔘 作为买家的交易数: {userseller_deals}\n"
+                         "🔘 <b>总交易数 {deals}</b>\n"
+                         "<blockquote>请确认是否是之前对话过的用户</blockquote>",
+        "buyer_joined": "买家 @{username} [{user_id}] 加入了本交易!\n"
+                        "🔘 作为卖家的交易数: {userbuyer_deals}\n"
+                        "🔘 作为买家的交易数: {userseller_deals}\n"
+                        "🔘 <b>总交易数 {deals}</b>\n"
+                        "<blockquote>请确认是否是之前对话过的用户</blockquote>",
+        "select_wallet_for_deal": "💼 <b>为交易选择钱包 (买方将向此地址支付TON):</b>\n"
+                                  "{wallet_list}\n"
+                                  "{no_wallets}\n"
+                                  "<blockquote>🔗可以<i><b>输入新地址</b></i>或选择已有地址</blockquote>",
+        "select_wallet": "𝟐️/𝟒 <b><u>选择用于交易的钱包</u> (款项将汇入此地址):</b>\n"
+                         "{wallet_list}\n"
+                         "{no_wallets}\n"
+                         "<blockquote>🔗可以<i><b>输入新地址</b></i>或选择已有地址</blockquote>",
+        "no_saved_wallets": "没有保存的钱包",
+        "commission_info": "(服务费 {percent}% 由买家承担)",
+        "join_deal_seller": "<b>🔗 您已加入交易 #{deal_id}</b>\n"
+                            "🛍️ 您出售: {gift_name}\n"
+                            "💰 NFT价格: {price} TON\n"
+                            "<blockquote><i>(服务费 {percent}% 由买家承担, 最低服务费0.01 TON)</i></blockquote>",
+        "join_deal_buyer": "<b>🔗 您已加入交易 #{deal_id}</b>\n"
+                           "🛍️ 您购买: {gift_name}\n"
+                           "💰 应付款项: <u><b>{price} TON</b></u>\n"
+                           "<blockquote><i>服务费为交易额的 {percent}%（最低服务费0.01 TON）</i></blockquote>",
+        "ton_address_confirmed": "TON 地址已确认！请等待买家付款",
+        "payment_required": "<b>🔗 交易 #{deal_id} 的付款</b>\n"
+                            "🛍️ 您购买: {gift_name}\n"
+                            "💰 应付款项: <b>{price} TON</b>\n"
+                            "<i>服务费为交易额的 {percent}%</i>",
+        "invalid_ton_address": "❗️TON地址格式不正确。 <u><i>请重试</i></u>❗️\n"
+                               "💼 <b>选择用于交易的钱包 (款项将汇入此地址):</b>\n"
+                               "{wallet_list}\n"
+                               "{no_wallets}\n"
+                               "🤝可以 <i><b>输入新地址</b></i> 或选择现有地址",
+        "deal_created": "<b>交易已创建! #{hex_id}</b>\n"
+                        "🛍️ 待售NFT: {gift_name}\n"
+                        "💰 NFT价格: <u>{price}</u> TON\n"
+                        "<blockquote><i>(服务费 {percent}% 由买家承担)</i></blockquote>\n"
+                        "🔗与另一方分享此链接:\n"
+                        "|\n"
+                        "|-<code>{link}</code>",
+        "ton_address_accepted": "TON 地址已确认！请等待买家付款",
+        "select_wallet_first": "⚠️ 请先选择钱包!",
+        "wallet_selected": "当前钱包: {wallet}",
+        "selected_ton_address": "𝟑/𝟒 已选TON地址:\n"
+                                "<blockquote><code>{ton_address}</code></blockquote>\n"
+                                "🔗 <u>发送礼物链接</u>:",
+        "language_selection": "🌏 选择语言 / Choose language",
+        "unknown_language": "🤔 不可用的语言",
+        "buyer_enter_gift_link": "𝟐/𝟑 发送礼物链接 🔗",
+        "deal_time_out": "交易 #{deal_id} 因无活动自动取消",
+        "leave_message": "@{username} 离开了交易 #{deal_id}",
+        "invalid_gift_link": "链接格式错误，请重试:",
+        "enter_price": "✅ 输入礼物价格（以TON计，格式为0.01）:",
+        "deal_canceled": "❌ 交易取消",
+        "price_must_be_number": "价格必须为大于0的数字。\n"
+                                "<i>十进制使用'.'</i>\n"
+                                "请重试:",
+        "you_leave": "您已退出交易",
+        "not_leave": "在此阶段无法退出",
+        "send_ton_payment": (
+            "交易 #{deal_id} 的付款\n"
+            "|\n"
+            "|-💰 向以下地址转账 <b>{amount}</b> TON:\n"
+            f"|<code>{Config.ADMIN_TON_ADDRESS}</code>\n"
+            f"|\n"
+            "|-⚠️ 请务必填写备注:\n"
+            "|<code>{comment}</code>\n"
+            "<blockquote>您有15分钟完成付款，系统将自动检测支付</blockquote>"
+        ),
+        "payment_started_notification": "买家开始付款。等待确认。",
+        "payment_timeout": "⏰ 付款超时。交易取消。",
+        "payment_confirmed": "✅ 付款确认成功！请等待礼物转移...\n"
+                             "<blockquote>转移会自动记录。如果15分钟后礼物未到账，TON将退还至您的账户</blockquote>",
+        "payment_received_notification": "🎁 已收到 @{username} 的付款。请将NFT转给买家。\n"
+                                         "<blockquote>转移会自动记录，您有15分钟时间操作</blockquote>",
+        "payment_timeout_refund": "⏳ 时间到了。开始退款...",
+        "deal_completed_buyer": "✅ 收到NFT！交易完成\n"
+                                "Mivelon Guarantor更新资讯请查看[官方频道]({link}) 🚀",
+        "deal_completed_seller": "✅ 交易完成！您收到了 {price} TON\n"
+                                 "Mivelon Guarantor更新资讯请查看[官方频道]({link}) 🚀",
+        "transfer_money_error": "❌ 转账失败。请联系客服。",
+        "your_wallets": "<b>💼 您的钱包:</b>",
+        "enter_ton_address_prompt": "📥 <b>输入TON钱包地址</b>\n示例: EQ... 或 UQ...",
+        "wallet_invalid_address_format": "⚠️ <b>地址格式错误!</b>\n <i>地址应以EQ或UQ开头且包含48个字符</i>",
+        "wallet_added_success": "✅ <b>钱包添加成功!</b>",
+        "select_wallet_to_delete": "👇 选择要删除的钱包:",
+        "no_wallets_to_delete": "❌ 您没有保存的钱包",
+        "wallet_selection_error": "❌ 钱包选择错误",
+        "confirm_wallet_deletion": "😕 删除钱包?\n{wallet}",
+        "success_delete": "✅ 钱包已删除!",
+        "already_full": "哎呀，这里已经满了",
+        "canceled": "交易已被取消！",
+        "invalid_link_format": "❌ 链接格式错误",
+        "invalid_referral_link": "❌ 推荐链接无效",
+        "new_referral": "👋 您有一个新推荐用户 @{username}!",
+        "referral_program": (
+            "🤝 推荐计划，您的链接:\n"
+            "<code>{link}</code>\n"
+            "🔘 推荐用户数量: <u><b>{count}</b></u>\n"
+            "🔘 总收益: <u><b>{revenue}</b></u>\n"
+            "<blockquote>从推荐用户的每笔交易中获取 {commission}% 佣金</blockquote>\n"
+            "💳 当前钱包: \n"
+            "<i>{active_wallet}</i>\n"
+            "<blockquote>只有达到 <u>1 TON</u> 才能提现</blockquote>"
+        ),
+        "payout_success": "资金已转入 {wallet}",
+        "insufficient_funds": "TON余额不足",
+        "add_wallet_first": "请先添加提现钱包",
+        "no_wallets": "请添加钱包",
+        "no_username": "❌ 使用此机器人需在Telegram设置中设定用户名(username)!"
     }
 }
 
