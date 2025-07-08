@@ -481,7 +481,7 @@ LEXICON = {
         "referral_button": "🫂推荐系统",
         "create_deal": "🚀创建交易",
         "language_button": "🌍语言",
-        "support_button": "🤝支持",
+        "support_button": "🤝客服",
         "done_button": "完成",
         "confirm_payment": "确认付款",
         "start_payment": "去付款",
@@ -514,9 +514,9 @@ LEXICON = {
                            "🔘 自动验证礼物转移</i>\n"
                            "创建或加入一笔交易吧\n"
                            "<blockquote><i>整个7月手续费仅1%</i></blockquote>",
-        "role_selection": "𝟏 请选择角色\n"
-                          "🔘<b>卖家</b> - 当前礼物的拥有者\n"
-                          "🔘<b>买家</b> - 支付TON的一方\n"
+        "role_selection": "𝟏 请选择您的角色：\n"
+                          "🔘<b>卖</b> — 拥有并发送 NFT 礼物的一方\n"
+                          "🔘<b>买</b> — 支付 TON 并接收礼物的一方\n"
                           "<blockquote><i>创建交易需要提供<u>NFT礼物链接</u>.</i></blockquote>",
         "deal_not_found": "找不到该交易，请检查HEX编码。",
         "already_participant": "您已经是这笔交易的参与者。",
@@ -621,18 +621,18 @@ LEXICON = {
         "invalid_referral_link": "❌ 推荐链接无效",
         "new_referral": "👋 您有一个新推荐用户 @{username}!",
         "referral_program": (
-            "🤝 推荐计划，您的链接:\n"
+            "🤝 邀请好友，专属推荐链接\n"
             "<code>{link}</code>\n"
-            "🔘 推荐用户数量: <u><b>{count}</b></u>\n"
-            "🔘 总收益: <u><b>{revenue}</b></u>\n"
-            "<blockquote>从推荐用户的每笔交易中获取 {commission}% 佣金</blockquote>\n"
+            "🔘 已邀请用户数: <u><b>{count}</b></u>\n"
+            "🔘 累计收益: <u><b>{revenue}</b></u>\n"
+            "<blockquote>您将从每位被邀请用户的交易中获得 {commission}%</blockquote>\n"
             "💳 当前钱包: \n"
             "<i>{active_wallet}</i>\n"
-            "<blockquote>只有达到 <u>1 TON</u> 才能提现</blockquote>"
+            "<blockquote>仅当余额达到 <u>1 TON</u> 时可申请提现</blockquote>"
         ),
         "payout_success": "资金已转入 {wallet}",
         "insufficient_funds": "TON余额不足",
-        "add_wallet_first": "请先添加提现钱包",
+        "add_wallet_first": "请先添加钱包地址。",
         "no_wallets": "请添加钱包",
         "no_username": "❌ 使用此机器人需在Telegram设置中设定用户名(username)!"
     }
